@@ -27,6 +27,7 @@ cd server || {
 }
 export FLASK_DEBUG=1
 export FLASK_PORT=5100
+export ENABLE_DEBUG_ENDPOINTS=true
 
 # Use appropriate Python command based on OS
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then

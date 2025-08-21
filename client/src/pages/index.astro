@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import GameList from '../components/GameList.svelte';
+import MemoryLeakTool from '../components/MemoryLeakTool.svelte';
 import "../styles/global.css";
 ---
 
@@ -10,7 +11,14 @@ import "../styles/global.css";
       <h1 class="text-4xl font-bold mb-4 text-slate-100">Welcome to Tailspin Toys</h1>
       <p class="text-xl text-slate-300">Find your next game! And maybe even back one! Explore our collection!</p>
     </div>
-    
-    <GameList client:only="svelte" />
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div class="lg:col-span-2">
+        <GameList client:only="svelte" />
+      </div>
+      <div>
+        <MemoryLeakTool client:only="svelte" />
+      </div>
+    </div>
   </div>
 </Layout>

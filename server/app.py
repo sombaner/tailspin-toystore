@@ -12,12 +12,11 @@ app: Flask = Flask(__name__)
 # Initialize the database with the app
 init_db(app)
 
-# Register blueprints
+# Register API blueprints
 app.register_blueprint(games_bp)
 
 # Enable debug endpoints only if explicitly allowed
-app.register_blueprint(debug_bp)
-if os.getenv('ENABLE_DEBUG_ENDPOINTS', 'true').lower() in ('1', 'true', 'yes'):
+if os.getenv('ENABLE_DEBUG_ENDPOINTS', 'false').lower() in ('1', 'true', 'yes'):
     app.register_blueprint(debug_bp)
 
 if __name__ == '__main__':

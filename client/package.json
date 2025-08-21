@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test:e2e": "npx playwright test"
+  "test:e2e": "npx playwright test",
+  "test:ui:load": "npx playwright test -c playwright.load.config.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.2.2",

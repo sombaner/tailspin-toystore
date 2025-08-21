@@ -16,6 +16,7 @@ init_db(app)
 app.register_blueprint(games_bp)
 
 # Enable debug endpoints only if explicitly allowed
+app.register_blueprint(debug_bp)
 if os.getenv('ENABLE_DEBUG_ENDPOINTS', 'true').lower() in ('1', 'true', 'yes'):
     app.register_blueprint(debug_bp)
 

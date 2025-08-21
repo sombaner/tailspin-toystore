@@ -3,6 +3,17 @@
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/"
-    }
+    },
+		"azure": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@azure/mcp@latest",
+				"server",
+				"start"
+			],
+			"gallery": true
+		}
   }
 }

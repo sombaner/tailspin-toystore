@@ -1,0 +1,128 @@
+name: Build and Deploy to AKS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_SERVER: ghcr.io/${{ github.repository }}/tailspin-server
+  IMAGE_CLIENT: ghcr.io/${{ github.repository }}/tailspin-client
+  NAMESPACE: toyspin
+  AKS_RESOURCE_GROUP: sb-aks-rg
+  AKS_CLUSTER_NAME: sbAKSCluster
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_SERVER }}:latest
+            ${{ env.IMAGE_SERVER }}:${{ github.sha }}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v6
+        with:
+          context: client
+          file: client/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_CLIENT }}:latest
+            ${{ env.IMAGE_CLIENT }}:${{ github.sha }}
+
+      - name: Render manifests with image tags
+        id: kustomize
+        run: |
+          mkdir -p render
+          sed "s|ghcr.io/OWNER/REPO/tailspin-server:latest|${{ env.IMAGE_SERVER }}:${{ github.sha }}|" k8s/server-deployment.yaml > render/server.yaml
+          sed "s|ghcr.io/OWNER/REPO/tailspin-client:latest|${{ env.IMAGE_CLIENT }}:${{ github.sha }}|" k8s/client-deployment.yaml > render/client.yaml
+          cp k8s/namespace.yaml render/namespace.yaml
+
+      - name: Upload rendered manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-manifests
+          path: render
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download rendered manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: k8s-manifests
+          path: render
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl apply -f render/namespace.yaml
+          # Create/refresh GHCR pull secret using a PAT with read:packages (store in repo secrets)
+          kubectl -n ${{ env.NAMESPACE }} create secret docker-registry ghcr-creds \
+            --docker-server=${{ env.REGISTRY }} \
+            --docker-username='${{ secrets.GHCR_USERNAME }}' \
+            --docker-password='${{ secrets.GHCR_TOKEN }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy server
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
+
+      - name: Deploy client
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} apply -f render/client.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-client --timeout=180s
+
+      - name: Get service external IP
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client -o wide

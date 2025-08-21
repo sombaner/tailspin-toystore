@@ -24,6 +24,8 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: "1"
+            - name: ENABLE_DEBUG_ENDPOINTS
+              value: "true"
           ports:
             - containerPort: 5100
           readinessProbe:

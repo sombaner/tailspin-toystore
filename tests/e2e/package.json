@@ -1,0 +1,17 @@
+{
+  "name": "tailspin-toys-e2e",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "End-to-End tests for Tailspin Toys that validate UI and API integration",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:ui": "npx playwright test --ui",
+    "install": "npx playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.1",
+    "@types/node": "^24.0.10"
+  }
+}

@@ -1,0 +1,129 @@
+name: Build and Deploy Server to AKS
+
+# Trigger on changes to server folder and server deployment configuration
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+      - 'k8s/server-deployment.yaml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_SERVER: ghcr.io/${{ github.repository }}/tailspin-server
+  NAMESPACE: toyspin
+  AKS_RESOURCE_GROUP: sb-aks-rg
+  AKS_CLUSTER_NAME: sbAKSCluster
+
+jobs:
+  build-and-push-server:
+    runs-on: ubuntu-latest
+    # Explicitly set permissions following security best practices
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Log in to GitHub Container Registry for server image
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push only the server Docker image
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_SERVER }}:latest
+            ${{ env.IMAGE_SERVER }}:${{ github.sha }}
+
+      # Render server deployment manifest with correct image tag
+      - name: Render server manifest with image tags
+        id: kustomize
+        run: |
+          mkdir -p render
+          sed "s|ghcr.io/OWNER/REPO/tailspin-server:latest|${{ env.IMAGE_SERVER }}:${{ github.sha }}|" k8s/server-deployment.yaml > render/server.yaml
+          cp k8s/namespace.yaml render/namespace.yaml
+
+      # Upload rendered server manifests for deployment job
+      - name: Upload rendered server manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-server-manifests
+          path: render
+
+  deploy-server:
+    needs: build-and-push-server
+    runs-on: ubuntu-latest
+    # Set minimum required permissions for deployment
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Download the rendered server manifests from build job
+      - name: Download rendered server manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: k8s-server-manifests
+          path: render
+
+      # Authenticate with Azure using OIDC
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Set up kubectl for AKS interactions
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      # Get credentials for the target AKS cluster
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+
+      # Ensure namespace exists and create GHCR pull secret
+      - name: Create namespace if not exists
+        run: |
+          kubectl apply -f render/namespace.yaml
+          # Create/refresh GHCR pull secret using a PAT with read:packages (store in repo secrets)
+          kubectl -n ${{ env.NAMESPACE }} create secret docker-registry ghcr-creds \
+            --docker-server=${{ env.REGISTRY }} \
+            --docker-username='${{ secrets.GHCR_USERNAME }}' \
+            --docker-password='${{ secrets.GHCR_TOKEN }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # Deploy only the server component
+      - name: Deploy server
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
+
+      # Wait for server rollout to complete
+      - name: Wait for server rollout
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
+
+      # Display server service status
+      - name: Get server service status
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide

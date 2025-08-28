@@ -61,26 +61,28 @@
   refreshStats();
 </script>
 
-<div class="max-w-3xl mx-auto p-4">
-  <div class="bg-slate-800 text-white rounded-lg shadow p-4 border border-slate-700">
+<div>
+  <div class="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-lg border border-slate-700/50 p-6 text-white">
     <h2 class="text-xl font-semibold mb-2">Memory Leak Tool</h2>
     <p class="text-sm text-slate-300 mb-4">
       Caution: For testing only. Enable on server with <code class="bg-slate-700 px-1 py-0.5 rounded">ENABLE_DEBUG_ENDPOINTS=true</code>.
     </p>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-      <label class="flex flex-col">
-        <span class="text-sm text-slate-300 mb-1">MB per allocation</span>
-        <input type="number" min="1" bind:value={mb} class="bg-slate-700 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </label>
-      <label class="flex flex-col">
-        <span class="text-sm text-slate-300 mb-1">Count</span>
-        <input type="number" min="1" bind:value={count} class="bg-slate-700 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-      </label>
-      <div class="flex items-end gap-2">
-        <button on:click={induce} disabled={loading} class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded px-4 py-2">Induce</button>
-        <button on:click={refreshStats} disabled={loading} class="bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white rounded px-4 py-2">Refresh</button>
-        <button on:click={clearLeak} disabled={loading} class="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded px-4 py-2">Clear</button>
+    <div class="space-y-4 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="flex flex-col">
+          <span class="text-sm text-slate-300 mb-1">MB per allocation</span>
+          <input type="number" min="1" bind:value={mb} class="bg-slate-700 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </label>
+        <label class="flex flex-col">
+          <span class="text-sm text-slate-300 mb-1">Count</span>
+          <input type="number" min="1" bind:value={count} class="bg-slate-700 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </label>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button on:click={induce} disabled={loading} class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded px-4 py-2 text-sm">Induce</button>
+        <button on:click={refreshStats} disabled={loading} class="bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white rounded px-4 py-2 text-sm">Refresh</button>
+        <button on:click={clearLeak} disabled={loading} class="bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded px-4 py-2 text-sm">Clear</button>
       </div>
     </div>
 

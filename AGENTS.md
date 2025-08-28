@@ -12,7 +12,9 @@ Dependencies or migrations
 
 ## Ensure:
 
-Tests pass
+Run accessibility tests
+Run automation tests 
+Run performance test using playwright
 
 API responses consistent with docs or clients
 

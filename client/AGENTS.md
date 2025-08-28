@@ -30,6 +30,10 @@ This file guides AI coding agents on how to work with the **client** side of the
 npm start
 
 ## Run all tests using:
+create accessibility tests for the code changes 
+create performance tests for the modified or new code changes
+
+## Run all tests using:
 
 npm test
 

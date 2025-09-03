@@ -22,6 +22,15 @@ The labs will walk you through the most common workloads with the agent capabili
 
 The lab envisions you as a new developer for Tailspin Toys, a fictional company who provides crowdfunding for boardgames with a DevOps theme - a huge market! You are tasked with creating issues to document the desired updates to the application and DevOps flow, then implementing the ability to filter games by both category and publisher. You'll work iteratively, exploring both the site and Copilot's capabilities, to complete the tasks.
 
+## Technical Documentation
+
+For developers working with the Tailspin Toys application:
+
+- **[Architecture Overview](./architecture.md)** - System architecture, components, and data flow
+- **[API Reference](./api-reference.md)** - Complete REST API documentation
+- **[Frontend Documentation](../client/README.md)** - Astro/Svelte frontend details
+- **[Testing Guide](../tests/e2e/README.md)** - End-to-end testing information
+
 ## Get started
 
 OK, let's [get going by starting with the setup](./0-prereqs.md)!

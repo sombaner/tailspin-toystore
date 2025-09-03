@@ -1,48 +1,80 @@
-# Astro Starter Kit: Basics
+# Tailspin Toys - Frontend Client
 
-```sh
-npm create astro@latest -- --template basics
-```
+The frontend application for Tailspin Toys, a fictional game crowdfunding platform built with [Astro](https://astro.build/) and [Svelte](https://svelte.dev/). This application provides a responsive web interface for browsing and discovering board games.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+## Architecture
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+This is an Astro-based static site with Svelte components for interactivity. The frontend communicates with a Flask backend API to fetch game data and handles client-side routing for dynamic content.
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
 ```text
-/
+client/
 ├── public/
 │   └── favicon.svg
 ├── src/
+│   ├── assets/           # Static assets (images, icons)
+│   ├── components/       # Svelte components
+│   │   ├── GameDetails.svelte    # Individual game detail view
+│   │   ├── GameList.svelte       # Games listing with filtering
+│   │   ├── Header.astro          # Site header and navigation
+│   │   └── MemoryLeakTool.svelte # Development debugging tool
 │   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   │   └── Layout.astro  # Main page layout template
+│   ├── pages/            # Astro pages (routes)
+│   │   ├── index.astro   # Homepage with game list
+│   │   ├── about.astro   # About page
+│   │   └── game/
+│   │       └── [id].astro # Dynamic game detail pages
+│   ├── styles/
+│   │   └── global.css    # Global CSS styles
+│   └── middleware.ts     # API proxy middleware
+├── e2e-tests/           # Frontend-specific E2E tests
+└── Dockerfile          # Container configuration
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## Features
 
-## 🧞 Commands
+- **Game Discovery**: Browse available board games with filtering capabilities
+- **Game Details**: View detailed information about individual games
+- **Responsive Design**: Works on desktop and mobile devices
+- **Performance Optimized**: Static generation with selective hydration
 
-All commands are run from the root of the project, from a terminal:
+## API Integration
+
+The frontend connects to the Flask backend API through:
+- **Middleware Proxy**: `src/middleware.ts` handles API routing
+- **Default Backend**: `http://localhost:5100` (configurable via `API_SERVER_URL`)
+- **Endpoints Used**: `/api/games`, `/api/games/{id}`
+
+## Development Commands
+
+All commands should be run from the `client/` directory:
 
 | Command                   | Action                                           |
 | :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+| `npm install`             | Install dependencies                             |
+| `npm run dev`             | Start development server at `localhost:4321`    |
+| `npm run build`           | Build production site to `./dist/`              |
+| `npm run preview`         | Preview production build locally                 |
+| `npm run test:e2e`        | Run frontend E2E tests                           |
+| `npm run test:load`       | Run load tests                                   |
 
-## 👀 Want to learn more?
+## Environment Configuration
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- `API_SERVER_URL`: Backend API URL (default: `http://localhost:5100`)
+
+## Testing
+
+- **E2E Tests**: Located in `e2e-tests/` using Playwright
+- **Load Tests**: Performance testing with custom configuration
+- **Integration Tests**: Full-stack tests available in `../tests/e2e/`
+
+## Deployment
+
+The application can be deployed as:
+- Static files (recommended for production)
+- Container using the included Dockerfile
+- Kubernetes deployment (see `../k8s/client-deployment.yaml`)
+
+For workshop tutorials and setup instructions, see the [docs](../docs/) directory.

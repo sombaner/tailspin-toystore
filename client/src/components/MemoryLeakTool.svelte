@@ -62,7 +62,7 @@
 </script>
 
 <div>
-  <div class="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-lg border border-slate-700/50 p-6 text-white">
+  <div class="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-lg border border-slate-700/50 p-6 text-lime-300">
     <h2 class="text-xl font-semibold mb-2">Memory Leak Tool</h2>
     <p class="text-sm text-slate-300 mb-4">
       Caution: For testing only. Enable on server with <code class="bg-slate-700 px-1 py-0.5 rounded">ENABLE_DEBUG_ENDPOINTS=true</code>.

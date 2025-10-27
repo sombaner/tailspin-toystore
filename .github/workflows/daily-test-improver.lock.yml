@@ -21,7 +21,7 @@ jobs:
   daily-test-coverage-improver:
     runs-on: ubuntu-latest
     permissions:
-      actions: read
+      actions: write
       checks: read
       contents: write
       issues: write

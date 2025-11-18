@@ -40,7 +40,7 @@ The application demonstrates a modern full-stack web architecture with:
 - **[Flask](https://flask.palletsprojects.com/en/stable/)** - Python web framework for the REST API
 - **[SQLAlchemy](https://www.sqlalchemy.org/)** - ORM for database interactions
 - **Flask-CORS** - Cross-Origin Resource Sharing support
-- **Python 3.11+** - Programming language
+- **Python 3.13** - Programming language
 
 ### Frontend
 - **[Astro](https://astro.build/)** - Modern static site builder with SSR support
@@ -108,7 +108,7 @@ The application demonstrates a modern full-stack web architecture with:
 
 Before running the application locally, ensure you have:
 
-- **Python 3.11 or higher** installed
+- **Python 3.13 or higher** installed
 - **Node.js 22 or higher** and npm installed
 - **Git** for version control
 - **Docker** (optional, for containerized deployment)
@@ -338,7 +338,7 @@ The `run-tests.yml` workflow executes on:
 
 **Jobs:**
 1. **backend-tests**
-   - Sets up Python 3.13 environment
+   - Sets up Python 3.13 environment (matching local development)
    - Installs dependencies using the setup script
    - Runs Flask unit tests
    - Fails the build if tests don't pass

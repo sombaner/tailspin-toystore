@@ -4,8 +4,8 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name:
-description:
+name:Documenter
+description: Documentation agent
 ---
 
 # i want to create a detailed instruction for documentation of this repository - [[https://github.com/sombaner/bookstore-supreme](https://github.com/sombaner/tailspin-toystore)]([https://github.com/sombaner/bookstore-supreme](https://github.com/sombaner/tailspin-toystore)) . Please provide a detailed instructions guide in markdown format to document the below repository., only provide instructions

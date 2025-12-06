@@ -575,23 +575,28 @@ This changes the subject claim from `environment:production` to `ref:refs/heads/
 If you need GitHub Environments for approval gates or environment-specific secrets, add a federated credential for each environment:
 
 ```bash
+# Set your variables (if not already set)
+APP_ID="<your-app-id>"  # Get with: az ad app list --display-name "github-actions-tailspin" --query "[0].appId" -o tsv
+GITHUB_ORG="<your-org>"  # e.g., "sombaner"
+GITHUB_REPO="<your-repo>"  # e.g., "tailspin-toystore"
+
 # For production environment
 az ad app federated-credential create \
-  --id <app-id> \
+  --id "$APP_ID" \
   --parameters '{
     "name": "github-actions-production",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:<org>/<repo>:environment:production",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 
 # For staging environment (if needed)
 az ad app federated-credential create \
-  --id <app-id> \
+  --id "$APP_ID" \
   --parameters '{
     "name": "github-actions-staging",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:<org>/<repo>:environment:staging",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:staging",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```
@@ -600,7 +605,7 @@ az ad app federated-credential create \
 
 List all federated credentials to verify configuration:
 ```bash
-az ad app federated-credential list --id <app-id> --query "[].{name:name, subject:subject}" -o table
+az ad app federated-credential list --id "$APP_ID" --query "[].{name:name, subject:subject}" -o table
 ```
 
 ## Getting Help

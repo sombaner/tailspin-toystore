@@ -18,6 +18,8 @@ This project features **end-to-end automated deployment** to Azure Kubernetes Se
 
 See the [deployment guide](./docs/deployment-guide.md) for detailed instructions.
 
+**Troubleshooting**: If you encounter Terraform backend authentication errors, see [docs/terraform-backend-fix.md](./docs/terraform-backend-fix.md).
+
 ### Architecture
 
 - **Infrastructure**: Azure AKS (Automatic mode), Azure Container Registry, Virtual Network, Log Analytics

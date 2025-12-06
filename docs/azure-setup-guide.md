@@ -395,6 +395,8 @@ az role assignment list \
 
 **After applying the fix**, wait 5-10 minutes for Azure RBAC permissions to propagate, then re-run the workflow.
 
+**For detailed step-by-step instructions and validation**, see [terraform-backend-fix.md](./terraform-backend-fix.md).
+
 ### Issue: "Error building ARM Config: obtain subscription() from Azure CLI: parsing json result from the Azure CLI"
 
 **Solution**: Ensure you're logged in with `az login` and the correct subscription is set with `az account set`.

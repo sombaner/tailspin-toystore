@@ -1,4 +1,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: toyspin
+  name: tail-spin
+  labels:
+    app: tailspin
+    environment: production
+    managed-by: terraform

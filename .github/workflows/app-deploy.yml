@@ -1,0 +1,306 @@
+name: Application Deployment to AKS
+
+# Workflow for deploying Tailspin applications to AKS cluster
+# Implements Constitution Principle IV (Container & K8s) and automated rollback capability
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Container Build and Scan"]
+    types:
+      - completed
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/app-deploy.yml'
+
+# Explicit permissions per Constitution Principle II
+permissions:
+  id-token: write       # Required for OIDC authentication to Azure
+  contents: read        # Read repository contents
+  issues: write         # Create issues for deployment failures
+
+env:
+  AZURE_LOCATION: 'centralindia'
+  RESOURCE_GROUP: 'rg-sb-aks-01'
+  NAMESPACE: 'tail-spin'
+  DEPLOYMENT_TIMEOUT: '300s'
+
+jobs:
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only run if container build succeeded or manually triggered
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Azure login using OIDC (no secrets in code)
+      - name: Azure Login via OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Get AKS and ACR details from Azure
+      - name: Get AKS and ACR Details
+        id: azure
+        run: |
+          # Get AKS cluster name
+          AKS_NAME=$(az aks list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].name" -o tsv)
+          echo "aks_name=$AKS_NAME" >> $GITHUB_OUTPUT
+          echo "AKS Cluster: $AKS_NAME"
+          
+          # Get ACR login server
+          ACR_LOGIN_SERVER=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].loginServer" -o tsv)
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+
+      # Configure kubectl with AKS credentials
+      - name: Configure kubectl
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ steps.azure.outputs.aks_name }} \
+            --overwrite-existing
+          
+          # Verify cluster connectivity
+          kubectl cluster-info
+          kubectl get nodes
+
+      # Create namespace if it doesn't exist
+      - name: Create Namespace
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl get namespace ${{ env.NAMESPACE }}
+
+      # Update manifests with ACR login server
+      # This step substitutes the placeholder ACR_LOGIN_SERVER with actual value
+      - name: Update Kubernetes Manifests
+        run: |
+          # Create temporary directory for updated manifests
+          mkdir -p /tmp/k8s-manifests
+          
+          # Update server deployment with ACR login server
+          sed "s|ACR_LOGIN_SERVER|${{ steps.azure.outputs.acr_login_server }}|g" \
+            k8s/server-deployment.yaml > /tmp/k8s-manifests/server-deployment.yaml
+          
+          # Update client deployment with ACR login server
+          sed "s|ACR_LOGIN_SERVER|${{ steps.azure.outputs.acr_login_server }}|g" \
+            k8s/client-deployment.yaml > /tmp/k8s-manifests/client-deployment.yaml
+          
+          # Verify substitution
+          echo "Server Deployment:"
+          grep "image:" /tmp/k8s-manifests/server-deployment.yaml
+          echo "Client Deployment:"
+          grep "image:" /tmp/k8s-manifests/client-deployment.yaml
+
+      # Deploy server application
+      - name: Deploy Server Application
+        id: deploy-server
+        run: |
+          kubectl apply -f /tmp/k8s-manifests/server-deployment.yaml
+          echo "Server deployment applied"
+
+      # Deploy client application
+      - name: Deploy Client Application
+        id: deploy-client
+        run: |
+          kubectl apply -f /tmp/k8s-manifests/client-deployment.yaml
+          echo "Client deployment applied"
+
+      # Wait for server rollout to complete
+      - name: Wait for Server Rollout
+        id: rollout-server
+        run: |
+          echo "Waiting for server deployment to complete..."
+          kubectl rollout status deployment/tailspin-server \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=${{ env.DEPLOYMENT_TIMEOUT }}
+          
+          # Check pod status
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=tailspin-server
+        timeout-minutes: 5
+        continue-on-error: true
+
+      # Wait for client rollout to complete
+      - name: Wait for Client Rollout
+        id: rollout-client
+        run: |
+          echo "Waiting for client deployment to complete..."
+          kubectl rollout status deployment/tailspin-client \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=${{ env.DEPLOYMENT_TIMEOUT }}
+          
+          # Check pod status
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=tailspin-client
+        timeout-minutes: 5
+        continue-on-error: true
+
+      # Get LoadBalancer external IP (with retry logic)
+      - name: Get External IP
+        id: external-ip
+        run: |
+          echo "Waiting for LoadBalancer external IP..."
+          for i in {1..30}; do
+            EXTERNAL_IP=$(kubectl get svc tailspin-client \
+              -n ${{ env.NAMESPACE }} \
+              -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+            
+            if [ -n "$EXTERNAL_IP" ]; then
+              echo "external_ip=$EXTERNAL_IP" >> $GITHUB_OUTPUT
+              echo "✅ External IP assigned: $EXTERNAL_IP"
+              break
+            fi
+            
+            echo "Waiting for external IP... (attempt $i/30)"
+            sleep 10
+          done
+          
+          # Verify IP was assigned
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "❌ Failed to get external IP after 5 minutes"
+            exit 1
+          fi
+        continue-on-error: true
+
+      # Basic smoke test - check if client is accessible
+      - name: Smoke Test - Client Accessibility
+        id: smoke-test
+        if: steps.external-ip.outputs.external_ip != ''
+        run: |
+          EXTERNAL_IP="${{ steps.external-ip.outputs.external_ip }}"
+          echo "Testing client accessibility at http://$EXTERNAL_IP"
+          
+          # Wait for service to be ready
+          sleep 30
+          
+          # Test HTTP endpoint (retry up to 5 times)
+          for i in {1..5}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP" || echo "000")
+            echo "HTTP response code: $HTTP_CODE (attempt $i/5)"
+            
+            if [ "$HTTP_CODE" == "200" ]; then
+              echo "✅ Client is accessible and responding"
+              exit 0
+            fi
+            
+            sleep 10
+          done
+          
+          echo "❌ Client health check failed"
+          exit 1
+        continue-on-error: true
+
+      # Rollback on failure
+      - name: Rollback on Failure
+        if: |
+          failure() && (
+            steps.rollout-server.outcome == 'failure' ||
+            steps.rollout-client.outcome == 'failure' ||
+            steps.smoke-test.outcome == 'failure'
+          )
+        run: |
+          echo "⚠️ Deployment failed, initiating rollback..."
+          
+          # Rollback server deployment
+          kubectl rollout undo deployment/tailspin-server -n ${{ env.NAMESPACE }}
+          echo "Server deployment rolled back"
+          
+          # Rollback client deployment
+          kubectl rollout undo deployment/tailspin-client -n ${{ env.NAMESPACE }}
+          echo "Client deployment rolled back"
+          
+          # Wait for rollback to complete
+          kubectl rollout status deployment/tailspin-server -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/tailspin-client -n ${{ env.NAMESPACE }} --timeout=120s
+          
+          echo "✅ Rollback completed successfully"
+
+      # Verify rollback status
+      - name: Verify Rollback
+        if: |
+          failure() && (
+            steps.rollout-server.outcome == 'failure' ||
+            steps.rollout-client.outcome == 'failure' ||
+            steps.smoke-test.outcome == 'failure'
+          )
+        run: |
+          echo "Verifying pod status after rollback..."
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          
+          # Check deployment status
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+
+      # Create failure notification issue
+      - name: Create Failure Issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Deployment Failed - ${context.workflow} #${context.runNumber}`;
+            const body = `### Deployment Failure Report
+            
+            **Workflow:** ${context.workflow}
+            **Run Number:** ${context.runNumber}
+            **Run ID:** ${context.runId}
+            **Commit:** ${context.sha.substring(0, 7)}
+            **Branch:** ${context.ref}
+            **Actor:** @${context.actor}
+            
+            **Failed Steps:**
+            - Server Rollout: ${context.payload.workflow_run?.conclusion || 'Unknown'}
+            - Client Rollout: ${context.payload.workflow_run?.conclusion || 'Unknown'}
+            - Smoke Tests: ${context.payload.workflow_run?.conclusion || 'Unknown'}
+            
+            **Action Required:**
+            1. Review workflow logs: [Run #${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            2. Check AKS pod logs: \`kubectl logs -n tail-spin -l app=tailspin-server\`
+            3. Review recent changes in commit ${context.sha.substring(0, 7)}
+            
+            **Rollback Status:** ${context.job.status === 'failure' ? 'Automatic rollback initiated' : 'No rollback needed'}
+            
+            ---
+            *This issue was automatically created by the deployment workflow.*`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['deployment-failure', 'infrastructure']
+            });
+
+      # Deployment summary
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "### Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace:** ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**AKS Cluster:** ${{ steps.azure.outputs.aks_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**ACR:** ${{ steps.azure.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
+          echo "**External IP:** ${{ steps.external-ip.outputs.external_ip }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Application URL:** http://${{ steps.external-ip.outputs.external_ip }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show deployment status
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          kubectl get svc -n ${{ env.NAMESPACE }}
+
+    outputs:
+      external_ip: ${{ steps.external-ip.outputs.external_ip }}
+      deployment_status: ${{ job.status }}

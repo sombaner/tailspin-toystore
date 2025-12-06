@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tailspin-client
-  namespace: toyspin
+  namespace: tail-spin
   labels:
     app: tailspin-client
 spec:
@@ -15,15 +15,13 @@ spec:
       labels:
         app: tailspin-client
     spec:
-      imagePullSecrets:
-        - name: ghcr-creds
       containers:
         - name: client
-          image: ghcr.io/OWNER/REPO/tailspin-client:latest
-          imagePullPolicy: IfNotPresent
+          image: ACR_LOGIN_SERVER/tailspin-client:latest
+          imagePullPolicy: Always
           env:
             - name: API_SERVER_URL
-              value: http://tailspin-server.toyspin.svc.cluster.local:5100
+              value: http://tailspin-server.tail-spin.svc.cluster.local:5100
             - name: HOST
               value: 0.0.0.0
             - name: PORT
@@ -36,23 +34,35 @@ spec:
               port: 4321
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /
               port: 4321
             initialDelaySeconds: 20
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: tailspin-client
-  namespace: toyspin
+  namespace: tail-spin
 spec:
+  type: LoadBalancer
   selector:
     app: tailspin-client
   ports:
     - name: http
       port: 80
       targetPort: 4321
-  type: LoadBalancer
+      protocol: TCP

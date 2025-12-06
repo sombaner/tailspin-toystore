@@ -1,0 +1,259 @@
+name: Container Build and Scan
+
+# Workflow for building, scanning, and pushing Docker images to Azure Container Registry
+# Implements Constitution Principle IV (Container & K8s Best Practices) and Principle II (Pipeline Security)
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Infrastructure Deployment"]
+    types:
+      - completed
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - 'client/**'
+      - '.github/workflows/docker-build.yml'
+
+# Explicit permissions per Constitution Principle II
+permissions:
+  id-token: write          # Required for OIDC authentication to Azure
+  contents: read           # Read repository contents
+  security-events: write   # Upload Trivy scan results to GitHub Security
+
+env:
+  AZURE_LOCATION: 'centralindia'
+  RESOURCE_GROUP: 'rg-sb-aks-01'
+
+jobs:
+  build-server:
+    name: Build Server Image
+    runs-on: ubuntu-latest
+    # Only run if infrastructure deployment succeeded or manually triggered
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Azure login using OIDC (no secrets in code)
+      - name: Azure Login via OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Get ACR name from Azure
+      - name: Get ACR Details
+        id: acr
+        run: |
+          ACR_NAME=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].name" -o tsv)
+          ACR_LOGIN_SERVER=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].loginServer" -o tsv)
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "ACR Name: $ACR_NAME"
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+
+      # Login to Azure Container Registry
+      - name: ACR Login
+        run: az acr login --name ${{ steps.acr.outputs.acr_name }}
+
+      # Set up Docker Buildx for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build server Docker image with commit SHA tag
+      - name: Build Server Image
+        id: build-server
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          SEMANTIC_VERSION="1.0.0"
+          
+          docker build \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${IMAGE_TAG} \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${SEMANTIC_VERSION} \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:latest \
+            -f server/Dockerfile \
+            .
+          
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "semantic_version=${SEMANTIC_VERSION}" >> $GITHUB_OUTPUT
+
+      # Install Trivy for vulnerability scanning
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      # Scan server image for vulnerabilities (block on HIGH/CRITICAL)
+      - name: Scan Server Image with Trivy
+        id: scan-server
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-server-results.sarif \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${{ steps.build-server.outputs.image_tag }}
+        continue-on-error: true
+
+      # Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-server-results.sarif
+          category: server-image
+
+      # Fail workflow if vulnerabilities found
+      - name: Check Scan Results
+        if: steps.scan-server.outcome == 'failure'
+        run: |
+          echo "❌ Security scan failed: HIGH or CRITICAL vulnerabilities detected in server image"
+          echo "Please review the Security tab for details and fix vulnerabilities before deployment"
+          exit 1
+
+      # Push server image to ACR
+      - name: Push Server Image to ACR
+        run: |
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${{ steps.build-server.outputs.image_tag }}
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${{ steps.build-server.outputs.semantic_version }}
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-server:latest
+
+      # Output summary
+      - name: Image Summary
+        run: |
+          echo "### Server Image Built ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${{ steps.build-server.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-server:${{ steps.build-server.outputs.semantic_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-server:latest\`" >> $GITHUB_STEP_SUMMARY
+
+    outputs:
+      acr_login_server: ${{ steps.acr.outputs.acr_login_server }}
+      server_image_tag: ${{ steps.build-server.outputs.image_tag }}
+
+  build-client:
+    name: Build Client Image
+    runs-on: ubuntu-latest
+    # Only run if infrastructure deployment succeeded or manually triggered
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Azure login using OIDC
+      - name: Azure Login via OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Get ACR name from Azure
+      - name: Get ACR Details
+        id: acr
+        run: |
+          ACR_NAME=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].name" -o tsv)
+          ACR_LOGIN_SERVER=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].loginServer" -o tsv)
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "ACR Name: $ACR_NAME"
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+
+      # Login to Azure Container Registry
+      - name: ACR Login
+        run: az acr login --name ${{ steps.acr.outputs.acr_name }}
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build client Docker image with commit SHA tag
+      - name: Build Client Image
+        id: build-client
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          SEMANTIC_VERSION="1.0.0"
+          
+          docker build \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${IMAGE_TAG} \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${SEMANTIC_VERSION} \
+            -t ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:latest \
+            -f client/Dockerfile \
+            ./client
+          
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "semantic_version=${SEMANTIC_VERSION}" >> $GITHUB_OUTPUT
+
+      # Install Trivy
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      # Scan client image for vulnerabilities (block on HIGH/CRITICAL)
+      - name: Scan Client Image with Trivy
+        id: scan-client
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-client-results.sarif \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${{ steps.build-client.outputs.image_tag }}
+        continue-on-error: true
+
+      # Upload Trivy scan results to GitHub Security
+      - name: Upload Trivy Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-client-results.sarif
+          category: client-image
+
+      # Fail workflow if vulnerabilities found
+      - name: Check Scan Results
+        if: steps.scan-client.outcome == 'failure'
+        run: |
+          echo "❌ Security scan failed: HIGH or CRITICAL vulnerabilities detected in client image"
+          echo "Please review the Security tab for details and fix vulnerabilities before deployment"
+          exit 1
+
+      # Push client image to ACR
+      - name: Push Client Image to ACR
+        run: |
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${{ steps.build-client.outputs.image_tag }}
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${{ steps.build-client.outputs.semantic_version }}
+          docker push ${{ steps.acr.outputs.acr_login_server }}/tailspin-client:latest
+
+      # Output summary
+      - name: Image Summary
+        run: |
+          echo "### Client Image Built ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${{ steps.build-client.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-client:${{ steps.build-client.outputs.semantic_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.acr.outputs.acr_login_server }}/tailspin-client:latest\`" >> $GITHUB_STEP_SUMMARY
+
+    outputs:
+      acr_login_server: ${{ steps.acr.outputs.acr_login_server }}
+      client_image_tag: ${{ steps.build-client.outputs.image_tag }}

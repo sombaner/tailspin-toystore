@@ -537,6 +537,77 @@ Error: AADSTS700016: Application with identifier '<client-id>' was not found
    }'
    ```
 
+### Issue: OIDC Authentication Fails with "No matching federated identity record found"
+
+**Symptoms**:
+```
+Error: AADSTS700213: No matching federated identity record found for presented assertion subject 
+'repo:<org>/<repo>:environment:production'. Check your federated identity credential Subject, 
+Audience and Issuer against the presented assertion.
+```
+
+**Cause**:
+The workflow uses `environment: production` (or another environment), but Azure doesn't have a federated credential configured for that environment subject claim.
+
+**Solution Option 1 (Recommended)**: Remove environment designation from workflow
+
+If you don't need GitHub Environment approval gates, remove the `environment:` line from your workflow:
+
+```yaml
+# Before:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # Remove this line
+    steps: ...
+
+# After:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps: ...
+```
+
+This changes the subject claim from `environment:production` to `ref:refs/heads/main`, matching the standard federated credential.
+
+**Solution Option 2**: Add environment-specific federated credential in Azure
+
+If you need GitHub Environments for approval gates or environment-specific secrets, add a federated credential for each environment:
+
+```bash
+# Set your variables (if not already set)
+APP_ID="<your-app-id>"  # Get with: az ad app list --display-name "github-actions-tailspin" --query "[0].appId" -o tsv
+GITHUB_ORG="<your-org>"  # e.g., "sombaner"
+GITHUB_REPO="<your-repo>"  # e.g., "tailspin-toystore"
+
+# For production environment
+az ad app federated-credential create \
+  --id "$APP_ID" \
+  --parameters '{
+    "name": "github-actions-production",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:production",
+    "audiences": ["api://AzureADTokenExchange"]
+  }'
+
+# For staging environment (if needed)
+az ad app federated-credential create \
+  --id "$APP_ID" \
+  --parameters '{
+    "name": "github-actions-staging",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:staging",
+    "audiences": ["api://AzureADTokenExchange"]
+  }'
+```
+
+**Verification**:
+
+List all federated credentials to verify configuration:
+```bash
+az ad app federated-credential list --id "$APP_ID" --query "[].{name:name, subject:subject}" -o table
+```
+
 ## Getting Help
 
 If issues persist:

@@ -1,6 +1,10 @@
 # Tailspin Toys Crowd Funding Development Guidelines
 
-This is a crowdfunding platform for games with a developer theme. The application uses a Flask backend API with SQLAlchemy ORM for database interactions, and an Astro/Svelte frontend with Tailwind CSS for styling. Please follow these guidelines when contributing:
+This is a crowdfunding platform for games with a developer theme. The application uses a Flask backend API with SQLAlchemy ORM for database interactions, and an Astro/Svelte frontend with Tailwind CSS for styling.
+
+**IMPORTANT**: All development MUST comply with the [Tailspin Toys Constitution](../.specify/memory/constitution.md), which defines non-negotiable principles for IaC, pipeline security, testing, containerization, and observability. When in doubt, refer to the constitution first.
+
+Please follow these guidelines when contributing:
 
 ## Code standards
 
@@ -39,9 +43,12 @@ This is a crowdfunding platform for games with a developer theme. The applicatio
 
 ### GitHub Actions workflows
 
-- Follow good security practices
-- Make sure to explicitly set the workflow permissions
+- Follow good security practices per Constitution Principle II
+- MUST use GitHub OIDC authentication to Azure (no service principal secrets)
+- MUST explicitly set the workflow permissions block
+- MUST validate before applying (terraform plan, az deployment what-if)
 - Add comments to document what tasks are being performed
+- Include failure notifications and rollback procedures
 
 ## Scripts
 
@@ -51,6 +58,34 @@ This is a crowdfunding platform for games with a developer theme. The applicatio
     - `scripts/setup-env.sh`: Performs installation of all Python and Node dependencies
     - `scripts/run-server-tests.sh`: Calls setup-env, then runs all Python tests
     - `scripts/start-app.sh`: Calls setup-env, then starts both backend and frontend servers
+
+### Infrastructure as Code (IaC)
+
+- All Azure infrastructure MUST be defined using Terraform in the `infra/` directory
+- Terraform state MUST use remote backend (Azure Storage) with locking
+- Follow HashiCorp style guide for Terraform formatting
+- Organize infrastructure by modules: networking, compute, data, security, monitoring
+- Always run: `terraform validate` → `terraform plan` → review → `terraform apply`
+- Never hardcode credentials or resource names; use variables
+- Tag all Azure resources: Environment, Project, Owner, CostCenter, ManagedBy=Terraform
+
+### Containerization & Kubernetes
+
+- Docker images defined in `server/Dockerfile` and `client/Dockerfile`
+- MUST use multi-stage builds with minimal base images (alpine, slim)
+- Test Docker images locally before pushing to Azure Container Registry
+- Kubernetes manifests organized under `k8s/` directory
+- All K8s resources MUST specify resource requests/limits
+- Include liveness and readiness probes for all deployments
+- Use Azure managed identity for pod authentication (no secrets)
+
+### Observability
+
+- Emit structured logs in JSON format with correlation IDs
+- Integrate with Azure Application Insights for telemetry
+- Configure Azure Monitor dashboards for each environment
+- Set up alerts: error rate >1%, response time P95 >2s, pod crashes
+- Log retention: Logs 30d, Metrics 90d, Traces 7d
 
 ## Repository Structure
 
@@ -64,6 +99,13 @@ This is a crowdfunding platform for games with a developer theme. The applicatio
   - `src/layouts/`: Astro layout templates
   - `src/pages/`: Astro page routes
   - `src/styles/`: CSS and Tailwind configuration
+- `infra/`: Terraform infrastructure as code
+  - `modules/`: Reusable Terraform modules by service
+  - `environments/`: Environment-specific variable files
+- `k8s/`: Kubernetes manifests
+  - Separate files per resource type
+  - Environment-specific overlays
+- `.github/workflows/`: GitHub Actions CI/CD pipelines
 - `scripts/`: Development and deployment scripts
 - `data/`: Database files
 - `docs/`: Project documentation

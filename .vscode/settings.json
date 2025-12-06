@@ -15,5 +15,21 @@
     ],
     "github.copilot.nextEditSuggestions.enabled": true,
     "editor.tabSize": 4,
-    "chat.agent.enabled": true
+    "chat.agent.enabled": true,
+    "chat.promptFilesRecommendations": {
+        "speckit.constitution": true,
+        "speckit.specify": true,
+        "speckit.plan": true,
+        "speckit.tasks": true,
+        "speckit.implement": true
+    },
+    "chat.tools.terminal.autoApprove": {
+        ".specify/scripts/bash/": true,
+        ".specify/scripts/powershell/": true
+    },
+    "chat.mcp.serverSampling": {
+        "tailspin-toystore-v4/.vscode/mcp.json: azure": {
+            "allowedDuringChat": true
+        }
+    }
 }

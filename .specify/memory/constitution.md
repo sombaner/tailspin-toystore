@@ -1,0 +1,219 @@
+<!--
+Sync Impact Report - Version 1.0.0
+
+VERSION CHANGE: Initial → 1.0.0
+PRINCIPLES ESTABLISHED:
+  - Infrastructure as Code (IaC) Excellence
+  - Pipeline Quality & Security
+  - Test-First Development (NON-NEGOTIABLE)
+  - Container & Kubernetes Best Practices
+  - DevOps Observability & Monitoring
+
+SECTIONS ADDED:
+  - Security & Compliance Standards
+  - Deployment & Release Management
+  
+TEMPLATES REQUIRING UPDATES:
+  ✅ plan-template.md - Updated with IaC and pipeline considerations
+  ✅ spec-template.md - Added deployment requirements section
+  ✅ tasks-template.md - Added IaC and pipeline task categories
+  
+FOLLOW-UP ACTIONS:
+  - Review GitHub Actions workflows for compliance with security principles
+  - Audit existing IaC files against Terraform/Bicep standards
+  - Validate test coverage meets minimum thresholds
+-->
+
+# Tailspin Toys Constitution
+
+## Core Principles
+
+### I. Infrastructure as Code (IaC) Excellence
+
+**MUST Requirements:**
+- All Azure infrastructure MUST be defined using Terraform modules with Azure provider
+- Terraform files MUST be organized under `infra/` directory with clear module structure
+- Infrastructure changes MUST be version controlled alongside application code
+- Terraform state MUST be stored remotely (Azure Storage backend) with state locking enabled
+- Every infrastructure change MUST follow: `terraform validate` → `terraform plan` → review → `terraform apply`
+
+**Rationale:** IaC ensures reproducibility, auditability, and consistency across environments. Manual infrastructure changes create drift, security vulnerabilities, and deployment failures. Terraform provides declarative infrastructure definition with strong Azure provider support.
+
+**Standards:**
+- Use Terraform latest stable version with Azure provider latest API versions
+- Follow HashiCorp style guide for Terraform code formatting
+- Organize modules by logical resource grouping (networking, compute, data, security)
+- Use variables for environment-specific values; never hardcode credentials or resource names
+- Include inline comments for non-obvious configuration decisions
+- Tag all Azure resources with: `Environment`, `Project`, `Owner`, `CostCenter`, `ManagedBy=Terraform`
+
+### II. Pipeline Quality & Security (NON-NEGOTIABLE)
+
+**MUST Requirements:**
+- All deployments MUST use GitHub Actions workflows with explicit permissions (`permissions:` block required)
+- Workflows MUST use GitHub OIDC authentication to Azure (no service principal secrets)
+- Pipeline files MUST include inline comments documenting each job's purpose
+- Secrets MUST be stored in GitHub Secrets or Azure Key Vault; never in code or logs
+- All deployment steps MUST validate before applying (e.g., `terraform plan`, `az deployment what-if`)
+- Failed pipelines MUST block deployment; manual overrides require documented justification
+
+**Rationale:** Pipelines are critical infrastructure requiring the same rigor as application code. Security breaches often exploit weak CI/CD configurations. Explicit permissions and OIDC prevent credential theft. Pre-deployment validation prevents production incidents.
+
+**Standards:**
+- Workflows organized under `.github/workflows/` with naming: `<component>-<action>.yml` (e.g., `infra-deploy.yml`, `app-ci.yml`)
+- Use reusable workflows for common patterns (build, test, deploy)
+- Implement approval gates for production deployments (GitHub Environments)
+- Set workflow timeouts to prevent hung jobs consuming minutes
+- Include failure notifications (GitHub Issues, Teams, email)
+- Scan IaC files with security tools (Checkov, tfsec) before deployment
+
+### III. Test-First Development (NON-NEGOTIABLE)
+
+**MUST Requirements:**
+- Tests MUST be written BEFORE implementation for all features
+- Tests MUST fail initially, then pass after implementation (Red-Green-Refactor)
+- Backend changes require: Unit tests (pytest) for business logic, Integration tests for API endpoints, Contract tests for API schemas
+- Frontend changes require: Component tests (Svelte Testing Library), E2E tests (Playwright) for user workflows
+- All tests MUST pass before merging to main branch
+- Test coverage MUST meet minimum thresholds: Backend ≥80%, Frontend ≥70%, E2E critical paths 100%
+
+**Rationale:** Test-first prevents regressions, documents expected behavior, and forces design thinking before coding. Skipping tests creates technical debt that compounds with each change. Coverage thresholds ensure adequate protection without bureaucracy.
+
+**Standards:**
+- Organize tests: `server/tests/` (pytest), `client/e2e-tests/` (Playwright), `tests/e2e/` (full-stack Playwright)
+- Use descriptive test names: `test_<functionality>_<scenario>_<expected_outcome>`
+- Mock external dependencies (databases, APIs) in unit tests; use real services in integration tests
+- Run tests locally via scripts: `./scripts/run-server-tests.sh`, `cd client && npm run test:e2e`
+- CI pipeline MUST run all test suites; failures block merge
+- Include accessibility tests for UI changes (axe-core, Pa11y)
+
+### IV. Container & Kubernetes Best Practices
+
+**MUST Requirements:**
+- Docker images MUST be tested locally before pushing to registry (Azure Container Registry)
+- Dockerfiles MUST use multi-stage builds with minimal final image size
+- Container images MUST be scanned for vulnerabilities before deployment (Trivy, Snyk)
+- Kubernetes manifests MUST be organized under `k8s/` directory with clear separation by environment
+- All Kubernetes resources MUST specify resource requests and limits
+- AKS deployments MUST use managed identity for Azure service authentication (no secrets in pods)
+
+**Rationale:** Containers are production artifacts requiring testing and security scanning. Untested images cause runtime failures. Resource limits prevent resource exhaustion. Managed identities eliminate credential management and reduce attack surface.
+
+**Standards:**
+- Dockerfile location: `server/Dockerfile` (Flask backend), `client/Dockerfile` (Astro frontend)
+- Base images: Use official minimal images (`python:3.11-slim`, `node:20-alpine`)
+- Image tagging: Use semantic versions and Git commit SHA (e.g., `v1.2.3-abc123f`)
+- Kubernetes manifests: Use separate files per resource type (`deployment.yaml`, `service.yaml`, `ingress.yaml`)
+- Apply Kubernetes security context: `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`
+- Health checks: Implement liveness and readiness probes for all deployments
+
+### V. DevOps Observability & Monitoring
+
+**MUST Requirements:**
+- All applications MUST emit structured logs (JSON format) with correlation IDs
+- Production deployments MUST integrate with Azure Monitor and Application Insights
+- Critical errors MUST trigger alerts (email, Teams, PagerDuty)
+- Deployment pipelines MUST capture and report deployment metrics (duration, success rate, rollback count)
+- Application performance MUST be monitored: Response times, Error rates, Resource utilization (CPU, memory, disk)
+- Infrastructure drift detection MUST run periodically (Terraform plan in CI)
+
+**Rationale:** Observability enables rapid incident response and proactive issue detection. Structured logs support automated analysis and debugging. Metrics inform capacity planning and performance optimization. Drift detection prevents configuration inconsistencies.
+
+**Standards:**
+- Log format: JSON with fields: `timestamp`, `level`, `message`, `correlation_id`, `service`, `environment`
+- Log levels: `DEBUG` (development only), `INFO` (normal operations), `WARN` (degraded), `ERROR` (failures)
+- Application Insights integration: Use SDK for automatic dependency tracking and request telemetry
+- Dashboard requirements: Create Azure Monitor dashboards for each environment showing: Service health, Request rate/latency P50/P95/P99, Error rate by endpoint, Resource utilization trends
+- Alert thresholds: Error rate >1% (5min window), Response time P95 >2s (5min window), Pod crash loop (immediate)
+- Retention: Logs 30 days, Metrics 90 days, Traces 7 days
+
+## Security & Compliance Standards
+
+**Authentication & Authorization:**
+- Use Azure Managed Identity for Azure-hosted resources (AKS, App Services)
+- Use GitHub OIDC for GitHub Actions authentication to Azure (no service principals)
+- Never hardcode credentials; use Azure Key Vault for secrets management
+- Implement least privilege: Grant minimal permissions required for each identity
+- Disable key-based access for Azure Storage and Cosmos DB (use RBAC only)
+- Enable Azure Key Vault purge protection and soft delete
+
+**Network Security:**
+- Deploy AKS with private cluster option (API server not publicly accessible)
+- Use Azure Virtual Network with network policies for pod-to-pod communication
+- Implement Azure Application Gateway with WAF for ingress traffic
+- Restrict Azure Container Registry access to specific virtual networks
+- Enable DDoS protection on public endpoints
+
+**Compliance:**
+- All Azure resources MUST be deployed in approved regions (compliance requirements)
+- Enable Azure Policy for automated compliance checking
+- Regular security audits using Azure Advisor and Security Center recommendations
+- Maintain audit logs for all infrastructure and deployment changes (minimum 90 days retention)
+
+## Deployment & Release Management
+
+**Environment Strategy:**
+- Maintain three environments: Development (dev), Staging (staging), Production (prod)
+- Infrastructure parity: All environments use identical IaC with environment-specific variables only
+- Database schema changes MUST be backward compatible for zero-downtime deployments
+- Feature flags for gradual rollout of new features
+
+**Deployment Process:**
+1. **Pre-Deployment Validation:**
+   - Run all automated tests (unit, integration, E2E)
+   - Execute IaC validation (`terraform validate`, `terraform plan`)
+   - Scan for security vulnerabilities (code, containers, IaC)
+   - Review deployment plan and approve in GitHub Environment
+
+2. **Deployment Execution:**
+   - Terraform: Provision/update AKS cluster and supporting Azure resources
+   - Docker: Build, scan, and push container images to Azure Container Registry
+   - Kubernetes: Apply manifests to deploy applications to AKS
+   - Verify deployment: Run smoke tests against deployed environment
+
+3. **Post-Deployment:**
+   - Monitor application logs and metrics for 15 minutes
+   - Validate critical user workflows with automated E2E tests
+   - Update deployment documentation with version and changes
+   - If issues detected: Execute automated rollback procedure
+
+**Rollback Strategy:**
+- Maintain previous deployment artifacts (container images, Terraform state)
+- Automated rollback triggered by: Deployment failure, Health check failures, Critical alert threshold breached
+- Rollback execution: Revert Kubernetes deployment to previous version, Restore Terraform state if infrastructure changed
+- Maximum rollback time target: 5 minutes from issue detection
+
+## Governance
+
+**Constitutional Authority:**
+- This constitution supersedes all other development practices and guidelines
+- All pull requests and code reviews MUST verify compliance with constitutional principles
+- Violations require documented justification and approval from two maintainers
+- Complexity that conflicts with principles (e.g., skipping tests, manual infrastructure) MUST be justified with:
+  - Specific technical constraint necessitating the violation
+  - Simpler alternatives considered and why they were rejected
+  - Remediation plan with timeline to return to compliance
+
+**Amendment Process:**
+- Constitution amendments require pull request with rationale and impact analysis
+- Amendments MUST increment version according to semantic versioning:
+  - MAJOR: Backward incompatible changes (removing/redefining principles)
+  - MINOR: Adding new principles or materially expanding guidance
+  - PATCH: Clarifications, wording improvements, non-semantic changes
+- Amendments require approval from majority of maintainers
+- After amendment: Update all related templates and guidance files
+- Migration plan required for changes affecting existing code/infrastructure
+
+**Compliance Review:**
+- Weekly automated compliance checks via GitHub Actions
+- Monthly manual review of constitution adherence by maintainers
+- Quarterly constitution effectiveness review: Are principles being followed? Do they improve outcomes?
+- Annual constitution update cycle to incorporate lessons learned
+
+**Development Guidance:**
+- Runtime development guidance: See [.github/copilot-instructions.md](.github/copilot-instructions.md)
+- Agent-specific PR guidance: See [AGENTS.md](AGENTS.md)
+- Testing standards: See [.github/instructions/python-tests.instructions.md](.github/instructions/python-tests.instructions.md)
+- UI development standards: See [.github/instructions/ui.instructions.md](.github/instructions/ui.instructions.md)
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-06 | **Last Amended**: 2025-12-06

@@ -41,6 +41,12 @@ echo "Service Principal Object ID: $SP_OBJECT_ID"
 
 ### 1.2 Configure Federated Identity Credentials
 
+**Important**: The subject claim format depends on whether your workflows use GitHub Environments.
+
+#### Option A: Without GitHub Environments (Recommended for Simple Setup)
+
+If your workflows don't specify `environment: production`, use these federated credentials:
+
 ```bash
 # Get your GitHub repository details
 GITHUB_ORG="<your-github-org>"  # e.g., "sombaner"
@@ -66,6 +72,34 @@ az ad app federated-credential create \
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```
+
+#### Option B: With GitHub Environments (For Approval Gates)
+
+If your workflows use `environment: production` for approval gates, you need additional federated credentials:
+
+```bash
+# Create federated credential for production environment
+az ad app federated-credential create \
+  --id "$APP_ID" \
+  --parameters '{
+    "name": "github-actions-production-env",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:production",
+    "audiences": ["api://AzureADTokenExchange"]
+  }'
+
+# Create federated credential for staging environment (if used)
+az ad app federated-credential create \
+  --id "$APP_ID" \
+  --parameters '{
+    "name": "github-actions-staging-env",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':environment:staging",
+    "audiences": ["api://AzureADTokenExchange"]
+  }'
+```
+
+**Note**: When using GitHub Environments in workflows, the subject claim changes from `ref:refs/heads/main` to `environment:<env-name>`. If you get an error like `AADSTS700213: No matching federated identity record found for presented assertion subject`, you need to add the appropriate environment-based federated credential shown above.
 
 ### 1.3 Assign Azure RBAC Permissions
 

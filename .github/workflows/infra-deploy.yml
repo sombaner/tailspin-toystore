@@ -36,7 +36,6 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       plan-exitcode: ${{ steps.plan.outputs.exitcode }}
     
@@ -136,7 +135,6 @@ jobs:
     if: |
       (github.event.inputs.action == 'apply' || 
        (github.ref == 'refs/heads/main' && needs.terraform-plan.outputs.plan-exitcode == '2'))
-    environment: production
     
     steps:
       - name: Checkout repository
@@ -228,7 +226,6 @@ jobs:
     runs-on: ubuntu-latest
     # Only run destroy if explicitly requested
     if: github.event.inputs.action == 'destroy'
-    environment: production
     
     steps:
       - name: Checkout repository

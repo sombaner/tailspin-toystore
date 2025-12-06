@@ -175,13 +175,29 @@ az storage container create \
 
 ### 2.4 Grant Service Principal Access to Storage
 
+**Important**: When using OIDC authentication with Terraform Azure backend, the service principal needs permissions to both read storage account properties and access blob data.
+
 ```bash
-# Assign Storage Blob Data Contributor role to service principal
+# Option 1: Assign Storage Account Contributor role (Recommended - includes all necessary permissions)
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role "Storage Account Contributor" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+# Option 2: Assign both Storage Blob Data Contributor and Reader roles (More restrictive)
+# This provides blob data access and read access to storage account properties
 az role assignment create \
   --assignee "$APP_ID" \
   --role "Storage Blob Data Contributor" \
   --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role "Reader" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
+
+**Note**: The **Storage Account Contributor** role includes `Microsoft.Storage/storageAccounts/listKeys/action` which Terraform may attempt to use during backend initialization. If you prefer least-privilege access, use Option 2 which provides read-only access to storage account metadata plus full blob data access.
 
 ### 2.5 Update Terraform Backend Configuration
 
@@ -260,6 +276,43 @@ terraform init
 # Expected output: "Successfully configured the backend 'azurerm'!"
 ```
 
+### 4.3 Validate Backend Configuration (Recommended)
+
+Use the provided validation script to verify all permissions are correctly configured:
+
+```bash
+# Run from repository root
+./scripts/validate-terraform-backend.sh "$APP_ID" "$STORAGE_ACCOUNT_NAME"
+```
+
+This script will:
+- ✅ Verify Azure CLI authentication
+- ✅ Check if storage account exists
+- ✅ Validate RBAC role assignments on the storage account
+- ✅ Confirm the service principal has necessary permissions
+- ✅ Ensure the tfstate container exists
+- ✅ Provide specific remediation steps if issues are found
+
+**Expected Output**:
+```
+==========================================
+Terraform Backend Validation
+==========================================
+
+✓ Azure CLI is installed
+✓ Logged in to Azure
+  Subscription ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+✓ Storage account 'sttfstateprod' exists
+✓ Found role assignments:
+  - Storage Account Contributor
+✓ Service principal has Storage Account Contributor role (includes all necessary permissions)
+✓ Container 'tfstate' exists
+
+==========================================
+✓ Validation completed successfully!
+==========================================
+```
+
 ## Step 5: Create Application Resource Group (Optional)
 
 You can pre-create the application resource group, or let Terraform create it:
@@ -293,6 +346,54 @@ After completing this setup, you will have:
 4. Monitor the workflow execution in GitHub Actions
 
 ## Troubleshooting
+
+### Issue: "Error: Failed to get existing workspaces: Error retrieving keys for Storage Account"
+
+**Full Error**:
+```
+Error: Failed to get existing workspaces: Error retrieving keys for Storage Account "sttfstateprod": 
+storage.AccountsClient#ListKeys: Failure responding to request: StatusCode=403 -- Original Error: 
+autorest/azure: Service returned an error. Status=403 Code="AuthorizationFailed" 
+Message="The client '***' with object id '...' does not have authorization to perform action 
+'Microsoft.Storage/storageAccounts/listKeys/action' over scope '/subscriptions/.../resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/sttfstateprod' 
+or the scope is invalid."
+```
+
+**Root Cause**: The service principal lacks sufficient permissions on the Terraform state storage account. When using OIDC authentication, Terraform needs both blob data access and storage account read permissions.
+
+**Solution**: Grant the service principal appropriate RBAC roles on the storage account:
+
+```bash
+# Get your service principal App ID and storage account details
+APP_ID="<your-app-id>"
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+STORAGE_ACCOUNT_NAME="<your-storage-account-name>"
+
+# Option 1: Assign Storage Account Contributor role (Recommended)
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role "Storage Account Contributor" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+# Option 2: Assign both Storage Blob Data Contributor and Reader roles
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role "Storage Blob Data Contributor" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+az role assignment create \
+  --assignee "$APP_ID" \
+  --role "Reader" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+# Verify the role assignments
+az role assignment list \
+  --assignee "$APP_ID" \
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-terraform-state/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME" \
+  --output table
+```
+
+**After applying the fix**, wait 5-10 minutes for Azure RBAC permissions to propagate, then re-run the workflow.
 
 ### Issue: "Error building ARM Config: obtain subscription() from Azure CLI: parsing json result from the Azure CLI"
 

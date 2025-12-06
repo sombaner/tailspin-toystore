@@ -10,10 +10,11 @@ This project features **end-to-end automated deployment** to Azure Kubernetes Se
 
 1. **Prerequisites**: Complete the one-time Azure setup following [docs/azure-setup-guide.md](./docs/azure-setup-guide.md)
 2. **Configure GitHub Secrets**: Add `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` to repository secrets
-3. **Deploy Infrastructure**: Trigger the "Infrastructure Deployment" workflow from GitHub Actions
-4. **Build Containers**: Trigger the "Container Build and Scan" workflow (or push code changes)
-5. **Deploy Application**: Trigger the "Application Deployment to AKS" workflow
-6. **Access Application**: Use the external IP from the deployment summary
+3. **Validate Setup**: Run `./scripts/validate-terraform-backend.sh <APP_ID> <STORAGE_ACCOUNT_NAME>` to verify permissions
+4. **Deploy Infrastructure**: Trigger the "Infrastructure Deployment" workflow from GitHub Actions
+5. **Build Containers**: Trigger the "Container Build and Scan" workflow (or push code changes)
+6. **Deploy Application**: Trigger the "Application Deployment to AKS" workflow
+7. **Access Application**: Use the external IP from the deployment summary
 
 See the [deployment guide](./docs/deployment-guide.md) for detailed instructions.
 

@@ -57,10 +57,6 @@ class StructuredJSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
             
-        # Add exception info if present
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-            
         return json.dumps(log_data)
 
 

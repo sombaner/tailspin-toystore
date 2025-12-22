@@ -1,7 +1,7 @@
 import logging
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from flask import Flask, request, g
 import time
@@ -23,7 +23,7 @@ class StructuredJSONFormatter(logging.Formatter):
             JSON formatted log string
         """
         log_data: Dict[str, Any] = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "level": record.levelname,
             "message": record.getMessage(),
             "service": "tailspin-toystore-api",

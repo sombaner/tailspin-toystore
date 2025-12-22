@@ -95,7 +95,8 @@ Please follow these guidelines when contributing:
 - Request/response logging middleware automatically tracks all API calls with duration
 - Use `get_logger(__name__)` in route modules to get a logger instance
 - Log levels: DEBUG (dev only), INFO (normal ops), WARN (degraded), ERROR (failures)
-- Include extra context fields in logs via `extra={'correlation_id': g.correlation_id, 'extra_fields': {...}}`
+- Include extra context fields in logs via `extra={'correlation_id': g.correlation_id, 'field1': value1, ...}`
+- All fields in `extra` dict are automatically added to the JSON output (except standard logging attrs)
 
 **Frontend (Astro Middleware):**
 - Middleware in `client/src/middleware.ts` logs all API proxy requests

@@ -35,9 +35,27 @@ class StructuredJSONFormatter(logging.Formatter):
         if correlation_id:
             log_data["correlation_id"] = correlation_id
             
-        # Add additional context fields if present
+        # Add any extra fields directly to log_data
+        # Skip standard record attributes and our custom ones
+        standard_attrs = {
+            'name', 'msg', 'args', 'created', 'filename', 'funcName', 'levelname', 
+            'levelno', 'lineno', 'module', 'msecs', 'message', 'pathname', 'process', 
+            'processName', 'relativeCreated', 'thread', 'threadName', 'exc_info', 
+            'exc_text', 'stack_info', 'correlation_id', 'environment', 'extra_fields',
+            'taskName'  # Filter out asyncio task name
+        }
+        
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs and not key.startswith('_'):
+                log_data[key] = value
+            
+        # Also support extra_fields for backward compatibility
         if hasattr(record, 'extra_fields'):
             log_data.update(record.extra_fields)
+            
+        # Add exception info if present
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
             
         # Add exception info if present
         if record.exc_info:
@@ -100,13 +118,6 @@ def add_request_logging_middleware(app: Flask) -> None:
         g.start_time = time.time()
         
         # Log incoming request
-        extra_fields = {
-            "method": request.method,
-            "path": request.path,
-            "remote_addr": request.remote_addr,
-            "user_agent": request.headers.get('User-Agent', '')
-        }
-        
         log_record = logging.LogRecord(
             name=app.logger.name,
             level=logging.INFO,
@@ -117,7 +128,10 @@ def add_request_logging_middleware(app: Flask) -> None:
             exc_info=None
         )
         log_record.correlation_id = correlation_id
-        log_record.extra_fields = extra_fields
+        log_record.method = request.method
+        log_record.path = request.path
+        log_record.remote_addr = request.remote_addr
+        log_record.user_agent = request.headers.get('User-Agent', '')
         log_record.environment = 'production' if not app.debug else 'development'
         
         app.logger.handle(log_record)
@@ -133,13 +147,6 @@ def add_request_logging_middleware(app: Flask) -> None:
             response.headers['X-Correlation-ID'] = g.correlation_id
             
             # Log response
-            extra_fields = {
-                "method": request.method,
-                "path": request.path,
-                "status_code": response.status_code,
-                "duration_ms": round(duration_ms, 2)
-            }
-            
             log_record = logging.LogRecord(
                 name=app.logger.name,
                 level=logging.INFO,
@@ -150,7 +157,10 @@ def add_request_logging_middleware(app: Flask) -> None:
                 exc_info=None
             )
             log_record.correlation_id = g.correlation_id
-            log_record.extra_fields = extra_fields
+            log_record.method = request.method
+            log_record.path = request.path
+            log_record.status_code = response.status_code
+            log_record.duration_ms = round(duration_ms, 2)
             log_record.environment = 'production' if not app.debug else 'development'
             
             app.logger.handle(log_record)

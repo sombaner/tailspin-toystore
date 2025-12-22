@@ -29,7 +29,7 @@ def get_games() -> Response:
         # Log successful query
         logger.info(f"Retrieved {len(games_query)} games", extra={
             'correlation_id': getattr(g, 'correlation_id', None),
-            'extra_fields': {'game_count': len(games_query)}
+            'game_count': len(games_query)
         })
         
         # Convert the results using the model's to_dict method
@@ -39,7 +39,7 @@ def get_games() -> Response:
     except Exception as e:
         logger.error(f"Error retrieving games: {str(e)}", extra={
             'correlation_id': getattr(g, 'correlation_id', None),
-            'extra_fields': {'error_type': type(e).__name__}
+            'error_type': type(e).__name__
         }, exc_info=True)
         return jsonify({"error": "Failed to retrieve games"}), 500
 
@@ -53,14 +53,15 @@ def get_game(id: int) -> tuple[Response, int] | Response:
         if not game_query:
             logger.warning(f"Game not found: {id}", extra={
                 'correlation_id': getattr(g, 'correlation_id', None),
-                'extra_fields': {'game_id': id}
+                'game_id': id
             })
             return jsonify({"error": "Game not found"}), 404
         
         # Log successful retrieval
         logger.info(f"Retrieved game: {game_query.title}", extra={
             'correlation_id': getattr(g, 'correlation_id', None),
-            'extra_fields': {'game_id': id, 'game_title': game_query.title}
+            'game_id': id,
+            'game_title': game_query.title
         })
         
         # Convert the result using the model's to_dict method
@@ -70,6 +71,7 @@ def get_game(id: int) -> tuple[Response, int] | Response:
     except Exception as e:
         logger.error(f"Error retrieving game {id}: {str(e)}", extra={
             'correlation_id': getattr(g, 'correlation_id', None),
-            'extra_fields': {'game_id': id, 'error_type': type(e).__name__}
+            'game_id': id,
+            'error_type': type(e).__name__
         }, exc_info=True)
         return jsonify({"error": "Failed to retrieve game"}), 500

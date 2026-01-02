@@ -12,7 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_SERVER: ghcr.io/${{ github.repository }}/tailspin-server
-  NAMESPACE: toyspin
+  NAMESPACE: tail-spin
   AKS_RESOURCE_GROUP: sb-aks-rg
   AKS_CLUSTER_NAME: sbAKSCluster
 

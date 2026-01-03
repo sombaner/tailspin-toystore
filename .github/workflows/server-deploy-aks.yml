@@ -39,7 +39,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push only the server Docker image
+      # Build and push only the server Docker image with public visibility
       - name: Build and push server image
         uses: docker/build-push-action@v6
         with:
@@ -102,16 +102,10 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists and create GHCR pull secret
+      # Ensure namespace exists
       - name: Create namespace if not exists
         run: |
           kubectl apply -f render/namespace.yaml
-          # Create/refresh GHCR pull secret using a PAT with read:packages (store in repo secrets)
-          kubectl -n ${{ env.NAMESPACE }} create secret docker-registry ghcr-creds \
-            --docker-server=${{ env.REGISTRY }} \
-            --docker-username='${{ secrets.GHCR_USERNAME }}' \
-            --docker-password='${{ secrets.GHCR_TOKEN }}' \
-            --dry-run=client -o yaml | kubectl apply -f -
 
       # Deploy only the server component
       - name: Deploy server

@@ -39,7 +39,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push only the server Docker image
+      # Build and push only the server Docker image with public visibility
       - name: Build and push server image
         uses: docker/build-push-action@v6
         with:
@@ -49,6 +49,24 @@ jobs:
           tags: |
             ${{ env.IMAGE_SERVER }}:latest
             ${{ env.IMAGE_SERVER }}:${{ github.sha }}
+      
+      # Make the image package public
+      - name: Make image public
+        run: |
+          # Set package visibility to public using GitHub API
+          curl -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/user/packages/container/tailspin-toystore%2Ftailspin-server/versions \
+            -d '{"visibility":"public"}' || true
+          
+          # Alternative: use gh CLI if available
+          gh api --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /orgs/${{ github.repository_owner }}/packages/container/tailspin-toystore%2Ftailspin-server \
+            -f visibility='public' || true
 
       # Render server deployment manifest with correct image tag
       - name: Render server manifest with image tags
@@ -102,16 +120,10 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists and create GHCR pull secret
+      # Ensure namespace exists
       - name: Create namespace if not exists
         run: |
           kubectl apply -f render/namespace.yaml
-          # Create/refresh GHCR pull secret using a PAT with read:packages (store in repo secrets)
-          kubectl -n ${{ env.NAMESPACE }} create secret docker-registry ghcr-creds \
-            --docker-server=${{ env.REGISTRY }} \
-            --docker-username='${{ secrets.GHCR_USERNAME }}' \
-            --docker-password='${{ secrets.GHCR_TOKEN }}' \
-            --dry-run=client -o yaml | kubectl apply -f -
 
       # Deploy only the server component
       - name: Deploy server

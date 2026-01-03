@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: ACR_LOGIN_SERVER/tailspin-server:latest
+          image: ghcr.io/OWNER/REPO/tailspin-server:latest
           imagePullPolicy: Always
           env:
             - name: PYTHONUNBUFFERED

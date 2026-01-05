@@ -1,0 +1,12 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SupportGameForm from "../components/SupportGameForm.svelte";
+
+const gameId = 123; // replace with your page data / param
+---
+
+<Layout title="Support Game">
+  <div class="max-w-2xl mx-auto">
+    <SupportGameForm client:load gameId={gameId} />
+  </div>
+</Layout>

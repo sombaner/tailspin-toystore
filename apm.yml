@@ -1,0 +1,16 @@
+name: tailspin-toystore
+version: 1.0.0
+description: Tpystore app  with form-builder and design standards
+author: sombaner
+dependencies:
+  apm:
+  - sombaner/form-builder        # Build forms with React Hook Form + Zod
+  - sombaner/design-guidelines-v1   # UI/UX standards
+scripts:
+  start: codex -s workspace-write --skip-git-repo-check hello-world.prompt.md
+  audit: copilot --log-level all --log-dir copilot-logs --allow-all -p compliance-audit.prompt.md
+  gdpr-check: codex --sandbox workspace-write --skip-git-repo-check gdpr-assessment.prompt.md
+  legal-review: codex -s workspace-write --skip-git-repo-check legal-review.prompt.md
+  design-review: codex -s workspace-write --skip-git-repo-check design-review.prompt.md
+  accessibility: codex -s workspace-write --skip-git-repo-check accessibility-audit.prompt.md
+  style-check: codex -s workspace-write --skip-git-repo-check style-guide-check.prompt.md

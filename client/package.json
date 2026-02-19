@@ -11,7 +11,7 @@
   "test:ui:load": "npx playwright test -c playwright.load.config.ts"
   },
   "dependencies": {
-    "@astrojs/node": "^9.2.2",
+    "@astrojs/node": "^9.4.1",
     "@astrojs/svelte": "^7.1.0",
     "@tailwindcss/vite": "^4.1.11",
     "astro": "^5.9.1",

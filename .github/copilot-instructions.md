@@ -87,6 +87,24 @@ Please follow these guidelines when contributing:
 - Set up alerts: error rate >1%, response time P95 >2s, pod crashes
 - Log retention: Logs 30d, Metrics 90d, Traces 7d
 
+#### Logging Implementation
+
+**Backend (Flask):**
+- Use `utils.logging_config` module for structured JSON logging
+- All logs include: timestamp (ISO 8601 UTC), level, message, service, environment, correlation_id
+- Request/response logging middleware automatically tracks all API calls with duration
+- Use `get_logger(__name__)` in route modules to get a logger instance
+- Log levels: DEBUG (dev only), INFO (normal ops), WARN (degraded), ERROR (failures)
+- Include extra context fields in logs via `extra={'correlation_id': g.correlation_id, 'field1': value1, ...}`
+- All fields in `extra` dict are automatically added to the JSON output (except standard logging attrs)
+
+**Frontend (Astro Middleware):**
+- Middleware in `client/src/middleware.ts` logs all API proxy requests
+- Logs structured JSON with correlation IDs for request tracing
+- Automatically generates correlation IDs if not provided by client
+- Correlation IDs propagate from frontend → middleware → backend for end-to-end tracing
+- Logs include: timestamp, level, message, correlation_id, service, environment, method, path, status_code, duration_ms
+
 ## Repository Structure
 
 - `server/`: Flask backend code
@@ -94,10 +112,12 @@ Please follow these guidelines when contributing:
   - `routes/`: API endpoints organized by resource
   - `tests/`: Unit tests for the API
   - `utils/`: Utility functions and helpers
+    - `logging_config.py`: Structured JSON logging configuration and middleware
 - `client/`: Astro/Svelte frontend code
   - `src/components/`: Reusable Svelte components
   - `src/layouts/`: Astro layout templates
   - `src/pages/`: Astro page routes
+  - `src/middleware.ts`: API proxy with structured logging
   - `src/styles/`: CSS and Tailwind configuration
 - `infra/`: Terraform infrastructure as code
   - `modules/`: Reusable Terraform modules by service

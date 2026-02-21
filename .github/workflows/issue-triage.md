@@ -9,6 +9,7 @@ permissions:
   issues: read
   pull-requests: read
 tools:
+  claude:
   github:
     toolsets: [default]
     lockdown: false
@@ -68,5 +69,25 @@ When this workflow is triggered by an issue being opened, edited, or reopened, y
 
 ## Safe Outputs
 
-- If you applied labels and/or posted a comment: use the appropriate safe outputs (`add-labels`, `add-comment`).
-- If the issue is already fully labelled and a triage comment already exists (from a previous run): call `noop` with a brief explanation such as "Issue is already triaged; no changes needed."
+**IMPORTANT**: To apply labels and/or post a comment, write JSON objects to the file at the path stored in the `GITHUB_AW_SAFE_OUTPUTS` environment variable (one JSON object per line, JSONL format). Do **not** use `gh` commands or the GitHub API directly.
+
+### Available Output Types
+
+**Adding labels** (up to 4 labels total):
+```json
+{"type": "add-issue-labels", "labels": ["bug", "backend", "priority: high"]}
+```
+
+**Adding a comment** (exactly 1 welcoming comment):
+```json
+{"type": "add-issue-comment", "body": "Your comment text here..."}
+```
+
+**No operation** (if the issue is already fully triaged):
+```json
+{"type": "noop"}
+```
+
+- If you applied labels and/or posted a comment: write the appropriate JSON lines to the file.
+- If the issue is already fully labelled and a triage comment already exists (from a previous run): write `{"type": "noop"}`.
+- Always write at least one entry (either an action or noop).

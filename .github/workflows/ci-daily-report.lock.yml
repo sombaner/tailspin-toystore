@@ -27,7 +27,7 @@
 #
 # gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"6fe14b1a2495d6d8e0927ba58396978021aa34685b5a0cf8deb36935a71a1721","compiler_version":"v0.48.1"}
 
-name: "CI Daily Report — ${{ github.repository }}"
+name: "CI Daily Report"
 "on":
   schedule:
   - cron: "49 15 * * 1-5"

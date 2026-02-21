@@ -16,9 +16,12 @@ env:
   AKS_RESOURCE_GROUP: sb-aks-rg
   AKS_CLUSTER_NAME: sbAKSCluster
 
+permissions: {}
+
 jobs:
   build-and-push-server:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Explicitly set permissions following security best practices
     permissions:
       contents: read
@@ -68,6 +71,7 @@ jobs:
   deploy-server:
     needs: build-and-push-server
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Set minimum required permissions for deployment
     permissions:
       contents: read

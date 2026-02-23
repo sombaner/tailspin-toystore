@@ -26,7 +26,7 @@ permissions:
 
 env:
   AZURE_LOCATION: 'centralindia'
-  RESOURCE_GROUP: 'rg-sb-aks-01'
+  RESOURCE_GROUP: 'sb-aks-rg'
   NAMESPACE: 'tail-spin'
   DEPLOYMENT_TIMEOUT: '300s'
 

@@ -62,7 +62,7 @@ jobs:
       - name: Upload rendered client manifests
         uses: actions/upload-artifact@v4
         with:
-          name: k8s-client-manifestz
+          name: k8s-client-manifests
           path: render
 
   deploy-client:

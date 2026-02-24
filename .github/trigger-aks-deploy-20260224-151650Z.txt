@@ -1,0 +1,2 @@
+Automated trigger from scheduled task at 2026-02-24T15:16:50Z.
+Reason: AKS cluster sbAKSCluster is currently Stopped; triggering Build and Deploy Client/Server to AKS workflows.

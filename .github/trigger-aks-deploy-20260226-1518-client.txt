@@ -1,0 +1,1 @@
+Automated trigger: Build and Deploy Client to AKS. Reason: AKS cluster powerState=Stopped at 2026-02-26T15:17:58Z.

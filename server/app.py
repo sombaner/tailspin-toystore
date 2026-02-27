@@ -3,11 +3,16 @@ from flask import Flask
 from routes.games import games_bp
 from routes.debug import debug_bp
 from utils.database import init_db
+from utils.logging_config import setup_logging, add_request_logging_middleware
 
 # Get the server directory path
 base_dir: str = os.path.abspath(os.path.dirname(__file__))
 
 app: Flask = Flask(__name__)
+
+# Initialize structured logging
+setup_logging(app)
+add_request_logging_middleware(app)
 
 # Initialize the database with the app
 init_db(app)

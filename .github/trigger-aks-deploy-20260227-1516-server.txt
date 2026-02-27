@@ -1,0 +1,2 @@
+Scheduled trigger: Server deploy workflow due to AKS cluster down.
+Timestamp: 2026-02-27T15:16:50Z

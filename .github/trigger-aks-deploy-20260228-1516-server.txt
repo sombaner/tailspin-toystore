@@ -1,0 +1,1 @@
+Scheduled task trigger: AKS cluster is Stopped; triggering Build and Deploy Server to AKS at 2026-02-28T15:16Z.

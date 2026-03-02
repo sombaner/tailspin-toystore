@@ -21,6 +21,9 @@ def get_games() -> Response:
     """Get all games, optionally filtered by a search query.
 
     Args:
+        None
+
+    Query Parameters:
         search: Optional query parameter to filter games by title.
 
     Returns:

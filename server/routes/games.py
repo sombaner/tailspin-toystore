@@ -32,7 +32,7 @@ def get_games() -> Response:
     # Apply search filter if provided
     search = request.args.get('search', '').strip()
     if search:
-        games_query = games_query.filter(Game.title.ilike(f'%{search}%'))
+        games_query = games_query.filter(Game.title.ilike('%' + search + '%'))
 
     games_list = [game.to_dict() for game in games_query.all()]
     

@@ -62,6 +62,9 @@
         
         return '★'.repeat(fullStars) + (halfStar ? '½' : '') + '☆'.repeat(emptyStars);
     }
+
+    let showSupportForm = false;
+    let supportComment = '';
 </script>
 
 {#if loading}
@@ -112,12 +115,32 @@
             </div>
             
             <div class="mt-8">
-                <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex justify-center items-center" data-testid="back-game-button">
+                <button 
+                    on:click={() => showSupportForm = !showSupportForm}
+                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex justify-center items-center" 
+                    data-testid="back-game-button"
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
                     </svg>
                     Support This Game
                 </button>
+                
+                {#if showSupportForm}
+                    <div class="mt-4 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 transition-all duration-300" data-testid="support-comment-section">
+                        <label for="support-comment" class="block text-sm font-medium text-slate-300 mb-2">
+                            Why do you want to support this game?
+                        </label>
+                        <textarea
+                            id="support-comment"
+                            bind:value={supportComment}
+                            placeholder="Share your thoughts on why this game deserves support..."
+                            rows="4"
+                            class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg text-slate-100 placeholder-slate-400 p-3 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-300 resize-none"
+                            data-testid="support-comment-input"
+                        ></textarea>
+                    </div>
+                {/if}
             </div>
         </div>
     </div>

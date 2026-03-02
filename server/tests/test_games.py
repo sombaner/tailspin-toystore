@@ -168,5 +168,47 @@ class TestGamesRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(data['error'], "Game not found")
 
+    def test_search_games_by_title(self) -> None:
+        """Test searching games by title returns matching results"""
+        # Act
+        response = self.client.get(f'{self.GAMES_API_PATH}?search=Pipeline')
+        data = self._get_response_data(response)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['title'], 'Pipeline Panic')
+
+    def test_search_games_case_insensitive(self) -> None:
+        """Test that search is case insensitive"""
+        # Act
+        response = self.client.get(f'{self.GAMES_API_PATH}?search=pipeline')
+        data = self._get_response_data(response)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['title'], 'Pipeline Panic')
+
+    def test_search_games_no_results(self) -> None:
+        """Test searching games with no matching results"""
+        # Act
+        response = self.client.get(f'{self.GAMES_API_PATH}?search=nonexistent')
+        data = self._get_response_data(response)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 0)
+
+    def test_search_games_empty_query(self) -> None:
+        """Test that empty search query returns all games"""
+        # Act
+        response = self.client.get(f'{self.GAMES_API_PATH}?search=')
+        data = self._get_response_data(response)
+        
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), len(self.TEST_DATA["games"]))
+
 if __name__ == '__main__':
     unittest.main()

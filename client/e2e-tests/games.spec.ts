@@ -149,13 +149,9 @@ test.describe('Game Listing and Navigation', () => {
     // Type a search query that likely won't match any game
     await searchInput.fill('zzzznonexistent');
     
-    // Wait for the debounced search to trigger and results to update
-    await page.waitForTimeout(500);
-    
-    // Either no games-grid or zero game cards
+    // Wait deterministically for the filtered results to show zero game cards
     const gameCards = page.locator('[data-testid="game-card"]');
-    const count = await gameCards.count();
-    expect(count).toBe(0);
+    await expect(gameCards).toHaveCount(0, { timeout: 10000 });
   });
 
   test('should show comment textbox when Support This Game is clicked', async ({ page }) => {

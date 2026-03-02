@@ -12,11 +12,14 @@
     export let games: Game[] = [];
     let loading = true;
     let error: string | null = null;
+    let searchQuery = '';
+    let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const fetchGames = async () => {
+    const fetchGames = async (search: string = '') => {
         loading = true;
         try {
-            const response = await fetch('/api/games');
+            const url = search ? `/api/games?search=${encodeURIComponent(search)}` : '/api/games';
+            const response = await fetch(url);
             if(response.ok) {
                 games = await response.json();
             } else {
@@ -29,6 +32,13 @@
         }
     };
 
+    const handleSearch = () => {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetchGames(searchQuery);
+        }, 300);
+    };
+
     onMount(() => {
         fetchGames();
     });
@@ -36,6 +46,22 @@
 
 <div>
     <h2 class="text-2xl font-medium mb-6 text-slate-100">Featured Games</h2>
+    
+    <div class="mb-6">
+        <div class="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+            <input
+                type="text"
+                bind:value={searchQuery}
+                on:input={handleSearch}
+                placeholder="Search featured games..."
+                class="w-full pl-10 pr-4 py-3 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-300"
+                data-testid="game-search-input"
+            />
+        </div>
+    </div>
     
     {#if loading}
         <!-- loading animation -->

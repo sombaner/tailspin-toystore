@@ -131,4 +131,50 @@ test.describe('Game Listing and Navigation', () => {
     // We expect the page to not crash and still have a valid title
     await expect(page).toHaveTitle(/Game Details - Tailspin Toys/);
   });
+
+  test('should display search input and filter games', async ({ page }) => {
+    await page.goto('/');
+    
+    // Wait for the games to load
+    await page.waitForSelector('[data-testid="games-grid"]', { timeout: 10000 });
+    
+    // Check that the search input is visible
+    const searchInput = page.locator('[data-testid="game-search-input"]');
+    await expect(searchInput).toBeVisible();
+    
+    // Get the initial number of games
+    const initialGameCount = await page.locator('[data-testid="game-card"]').count();
+    expect(initialGameCount).toBeGreaterThan(0);
+    
+    // Type a search query that likely won't match any game
+    await searchInput.fill('zzzznonexistent');
+    
+    // Wait deterministically for the filtered results to show zero game cards
+    const gameCards = page.locator('[data-testid="game-card"]');
+    await expect(gameCards).toHaveCount(0, { timeout: 10000 });
+  });
+
+  test('should show comment textbox when Support This Game is clicked', async ({ page }) => {
+    await page.goto('/game/1');
+    
+    // Wait for game details to load
+    await page.waitForSelector('[data-testid="game-details"]', { timeout: 10000 });
+    
+    // Verify comment section is not visible initially
+    await expect(page.locator('[data-testid="support-comment-section"]')).not.toBeVisible();
+    
+    // Click the Support This Game button
+    const backButton = page.locator('[data-testid="back-game-button"]');
+    await backButton.click();
+    
+    // Verify the comment section is now visible
+    const commentSection = page.locator('[data-testid="support-comment-section"]');
+    await expect(commentSection).toBeVisible();
+    
+    // Verify the textarea is present and can accept input
+    const commentInput = page.locator('[data-testid="support-comment-input"]');
+    await expect(commentInput).toBeVisible();
+    await commentInput.fill('This game looks amazing and supports a great cause!');
+    await expect(commentInput).toHaveValue('This game looks amazing and supports a great cause!');
+  });
 });

@@ -1,4 +1,4 @@
-# SRE retrigger: 2026-03-02T10:01:26Z
+# SRE retrigger: 2026-03-02T10:05:30Z (touch)
 apiVersion: apps/v1
 kind: Deployment
 metadata:

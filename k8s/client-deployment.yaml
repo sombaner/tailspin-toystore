@@ -1,4 +1,4 @@
-# SRE auto-trigger: 2026-03-02 09:46 UTC
+# SRE retrigger: 2026-03-02T09:50:30Z
 apiVersion: apps/v1
 kind: Deployment
 metadata:

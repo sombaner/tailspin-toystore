@@ -50,6 +50,15 @@ jobs:
             ${{ env.IMAGE_SERVER }}:latest
             ${{ env.IMAGE_SERVER }}:${{ github.sha }}
 
+      # Make the server image package public
+      - name: Make server image public
+        run: |
+          curl -L -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/user/packages/container/tailspin-server/visibility \
+            -d '{"visibility":"public"}'
+
       # Render server deployment manifest with correct image tag
       - name: Render server manifest with image tags
         id: kustomize

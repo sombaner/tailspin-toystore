@@ -1,3 +1,4 @@
+# SRE scheduled trigger: 2026-03-02 09:27 UTC
 apiVersion: apps/v1
 kind: Deployment
 metadata:

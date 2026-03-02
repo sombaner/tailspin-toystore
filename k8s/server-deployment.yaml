@@ -1,4 +1,4 @@
-# SRE scheduled trigger: 2026-03-02 09:39 UTC
+# SRE scheduled trigger: 2026-03-02 09:41 UTC
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -61,6 +61,7 @@ spec:
   selector:
     app: tailspin-server
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 5100
-      targetPort:  Laurens
+      targetPort: 5100

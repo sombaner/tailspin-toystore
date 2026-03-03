@@ -65,3 +65,4 @@ spec:
       protocol: TCP
       port: 5100
       targetPort: 5100
+# SRE retrigger: 2026-03-03T09:08:20Z (touch)

@@ -67,3 +67,4 @@ spec:
       port: 80
       targetPort: 4321
       protocol: TCP
+# SRE retrigger: 2026-03-03T09:07:55Z (touch)

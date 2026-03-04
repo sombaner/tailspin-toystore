@@ -64,7 +64,7 @@ jobs:
         id: kustomize
         run: |
           mkdir -p render
-          sed "s|ghcr.io/OWNER/REPO/tailspin-client:latest|${{ env.IMAGE_CLIENT }}:${{ github.sha }}|" k8s/client-deployment.yaml > render/client.yaml
+          sed "s|ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest|${{ env.IMAGE_CLIENT }}:${{ github.sha }}|" k8s/client-deployment.yaml > render/client.yaml
           cp k8s/namespace.yaml render/namespace.yaml
 
       # Upload rendered client manifests for deployment job

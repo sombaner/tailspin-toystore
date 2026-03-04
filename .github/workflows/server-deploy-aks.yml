@@ -64,7 +64,7 @@ jobs:
         id: kustomize
         run: |
           mkdir -p render
-          sed "s|ghcr.io/OWNER/REPO/tailspin-server:latest|${{ env.IMAGE_SERVER }}:${{ github.sha }}|" k8s/server-deployment.yaml > render/server.yaml
+          sed "s|ghcr.io/sombaner/tailspin-toystore/tailspin-server:latest|${{ env.IMAGE_SERVER }}:${{ github.sha }}|" k8s/server-deployment.yaml > render/server.yaml
           cp k8s/namespace.yaml render/namespace.yaml
 
       # Upload rendered server manifests for deployment job
@@ -104,7 +104,7 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      # Get credentials for the target AKS cluster
+      # Get AKS credentials for the target cluster
       - name: Get AKS credentials
         uses: azure/aks-set-context@v4
         with:

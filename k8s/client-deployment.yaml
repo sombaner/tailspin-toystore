@@ -1,1 +1,89 @@
-IyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTEwVDA5OjAzOjEwWiAodG91Y2gpCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wOFQwOToyMzo1NVogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDhUMDk6MTg6NTVaICh0b3VjaCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA4VDA5OjEyOjMwWiAodG91Y2gpCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wOFQwOTowNzo0NFogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDhUMDk6MDM6MzFaICh0b3VjaCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA3VDA5OjE2OjU5WiAodG91Y2gpCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wN1QwOToxMDo0NVogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDdUMDk6MDI6MzNaICh0b3VjaCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA2VDA5OjE5OjQwWiAodG91Y2gpCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wNlQwOToxNTozMFogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDZUMDk6MDk6NTVaICh0b3VjaCkKYXBpVmVyc2lvbjogYXBwcy92MQpraW5kOiBEZXBsb3ltZW50Cm1ldGFkYXRhOgogIG5hbWU6IHRhaWxzcGluLWNsaWVudAogIG5hbWVzcGFjZTogdGFpbC1zcGluCiAgbGFiZWxzOgogICAgYXBwOiB0YWlsc3Bpbi1jbGllbnQKc3BlYzoKICByZXBsaWNhczogMQogIHNlbGVjdG9yOgogICAgbWF0Y2hMYWJlbHM6CiAgICAgIGFwcDogdGFpbHNwaW4tY2xpZW50CiAgdGVtcGxhdGU6CiAgICBtZXRhZGF0YToKICAgICAgbGFiZWxzOgogICAgICAgIGFwcDogdGFpbHNwaW4tY2xpZW50CiAgICBzcGVjOgogICAgICBjb250YWluZXJzOgogICAgICAgIC0gbmFtZTogY2xpZW50CiAgICAgICAgICBpbWFnZTogZ2hjci5pby9zb21iYW5lci90YWlsc3Bpbi10b3lzdG9yZS90YWlsc3Bpbi1jbGllbnQ6bGF0ZXN0CiAgICAgICAgICBpbWFnZVB1bGxQb2xpY3k6IEFsd2F5cwogICAgICAgICAgZW52OgogICAgICAgICAgICAtIG5hbWU6IEFQSV9TRVJWRVJfVVJMCiAgICAgICAgICAgICAgdmFsdWU6IGh0dHA6Ly90YWlsc3Bpbi1zZXJ2ZXIudGFpbC1zcGluLnN2Yy5jbHVzdGVyLmxvY2FsOjUxMDAKICAgICAgICAgICAgLSBuYW1lOiBIT1NUCiAgICAgICAgICAgICAgdmFsdWU6IDAuMC4wLjAKICAgICAgICAgICAgLSBuYW1lOiBQT1JUCiAgICAgICAgICAgICAgdmFsdWU6ICI0MzIxIgogICAgICAgICAgcG9ydHM6CiAgICAgICAgICAgIC0gY29udGFpbmVyUG9ydDogNDMyMQogICAgICAgICAgcmVhZGluZXNzUHJvYmU6CiAgICAgICAgICAgIGh0dHBHZXQ6CiAgICAgICAgICAgICAgcGF0aDogLwogICAgICAgICAgICAgIHBvcnQ6IDQzMjEKICAgICAgICAgICAgaW5pdGlhbERlbGF5U2Vjb25kczogMTAKICAgICAgICAgICAgcGVyaW9kU2Vjb25kczogMTAKICAgICAgICAgICAgdGltZW91dFNlY29uZHM6IDUKICAgICAgICAgICAgZmFpbHVyZVRocmVzaG9sZDogMwogICAgICAgICAgbGl2ZW5lc3NQcm9iZToKICAgICAgICAgICAgaHR0cEdldDoKICAgICAgICAgICAgICBwYXRoOiAvCiAgICAgICAgICAgICAgcG9ydDogNDMyMQogICAgICAgICAgICBpbml0aWFsRGVsYXlTZWNvbmRzOiAyMAogICAgICAgICAgICBwZXJpb2RTZWNvbmRzOiAyMAogICAgICAgICAgICB0aW1lb3V0U2Vjb25kczogNQogICAgICAgICAgICBmYWlsdXJlVGhyZXNob2xkOiAzCiAgICAgICAgICByZXNvdXJjZXM6CiAgICAgICAgICAgIHJlcXVlc3RzOgogICAgICAgICAgICAgIGNwdTogIjEwMG0iCiAgICAgICAgICAgICAgbWVtb3J5OiAiMjU2TWkiCiAgICAgICAgICAgIGxpbWl0czoKICAgICAgICAgICAgICBjcHU6ICI1MDBtIgogICAgICAgICAgICAgIG1lbW9yeTogIjUxMk1pIgoKLS0tCmFwaVZlcnNpb246IHYxCmtpbmQ6IFNlcnZpY2UKbWV0YWRhdGE6CiAgbmFtZTogdGFpbHNwaW4tY2xpZW50CiAgbmFtZXNwYWNlOiB0YWlsLXNwaW4Kc3BlYzoKICB0eXBlOiBMb2FkQmFsYW5jZXIKICBzZWxlY3RvcjoKICAgIGFwcDogdGFpbHNwaW4tY2xpZW50CiAgcG9ydHM6CiAgICAtIG5hbWU6IGh0dHAKICAgICAgcG9ydDogODAKICAgICAgdGFyZ2V0UG9ydDogNDMyMQogICAgICBwcm90b2NvbDogVENQCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wM1QwOToxMjozN1ogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDNUMDk6MTY6NDVaICh0b3VjaCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA0VDA5OjA0OjIwWiAodG91Y2gpCiMgU1JFIGZpeDogMjAyNi0wMy0wNFQwOToxMToxMFogKGltYWdlIC0+IGdoY3IuaW8vc29tYmFuZXIvdGFpbHNwaW4tdG95c3RvcmUvdGFpbHNwaW4tY2xpZW50OmxhdGVzdCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA0VDA5OjE0OjMwWiAodG91Y2gpCiMgU1JFIHJldHJpZ2dlcjogMjAyNi0wMy0wNFQwOTozMTowNVogKHRvdWNoKQojIFNSRSByZXRyaWdnZXI6IDIwMjYtMDMtMDRUMDk6Mzc6MTVaICh0b3VjaCkKIyBTUkUgcmV0cmlnZ2VyOiAyMDI2LTAzLTA0VDA5OjQyOjEwWiAodG91Y2gp
+# SRE retrigger: 2026-03-11T09:05:20Z (touch)
+# SRE retrigger: 2026-03-10T09:03:10Z (touch)
+# SRE retrigger: 2026-03-08T09:23:55Z (touch)
+# SRE retrigger: 2026-03-08T09:18:55Z (touch)
+# SRE retrigger: 2026-03-08T09:12:30Z (touch)
+# SRE retrigger: 2026-03-08T09:07:44Z (touch)
+# SRE retrigger: 2026-03-08T09:03:31Z (touch)
+# SRE retrigger: 2026-03-07T09:16:59Z (touch)
+# SRE retrigger: 2026-03-07T09:10:45Z (touch)
+# SRE retrigger: 2026-03-07T09:02:33Z (touch)
+# SRE retrigger: 2026-03-06T09:19:40Z (touch)
+# SRE retrigger: 2026-03-06T09:15:30Z (touch)
+# SRE retrigger: 2026-03-06T09:09:55Z (touch)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailspin-client
+  namespace: tail-spin
+  labels:
+    app: tailspin-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailspin-client
+  template:
+    metadata:
+      labels:
+        app: tailspin-client
+    spec:
+      containers:
+        - name: client
+          image: ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest
+          imagePullPolicy: Always
+          env:
+            - name: API_SERVER_URL
+              value: http://tailspin-server.tail-spin.svc.cluster.local:5100
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "4321"
+          ports:
+            - containerPort: 4321
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4321
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4321
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tailspin-client
+  namespace: tail-spin
+spec:
+  type: LoadBalancer
+  selector:
+    app: tailspin-client
+  ports:
+    - name: http
+      port: 80
+      targetPort: 4321
+      protocol: TCP
+# SRE retrigger: 2026-03-03T09:12:37Z (touch)
+# SRE retrigger: 2026-03-03T09:16:45Z (touch)
+# SRE retrigger: 2026-03-04T09:04:20Z (touch)
+# SRE fix: 2026-03-04T09:11:10Z (image -> ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest)
+# SRE retrigger: 2026-03-04T09:14:30Z (touch)
+# SRE retrigger: 2026-03-04T09:31:05Z (touch)
+# SRE retrigger: 2026-03-04T09:37:15Z (touch)
+# SRE retrigger: 2026-03-04T09:42:10Z (touch)

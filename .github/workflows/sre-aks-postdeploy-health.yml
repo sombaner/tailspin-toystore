@@ -1,0 +1,125 @@
+name: SRE AKS Post-Deploy Health Check
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Deploy Client to AKS
+      - Build and Deploy Server to AKS
+    types:
+      - completed
+  workflow_dispatch:
+
+env:
+  NAMESPACE: tail-spin
+  AKS_RESOURCE_GROUP: sb-aks-rg
+  AKS_CLUSTER_NAME: sbAKSCluster
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+
+      - name: Wait for client rollout
+        run: |
+          set -e
+          kubectl -n $NAMESPACE rollout status deploy/tailspin-client --timeout=180s || true
+
+      - name: Wait for server rollout
+        run: |
+          set -e
+          kubectl -n $NAMESPACE rollout status deploy/tailspin-server --timeout=180s || true
+
+      - name: Gather pod status and logs
+        id: gather
+        run: |
+          set -e
+          kubectl -n $NAMESPACE get pods -o wide > pods.txt
+          # Capture pod logs (last 200 lines)
+          for p in $(kubectl -n $NAMESPACE get pods -o jsonpath='{.items[*].metadata.name}'); do
+            echo "==== LOGS: $p ====" >> logs.txt || true
+            kubectl -n $NAMESPACE logs --tail=200 "$p" >> logs.txt || true
+            echo "\n" >> logs.txt
+          done
+          # Save services
+          kubectl -n $NAMESPACE get svc -o wide > services.txt
+
+      - name: Probe external client endpoint
+        id: probe_client
+        continue-on-error: true
+        run: |
+          set -e
+          EXTERNAL_IP=$(kubectl -n $NAMESPACE get svc tailspin-client -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "No external IP yet"; exit 1
+          fi
+          echo "Client LB IP: $EXTERNAL_IP"
+          curl -fsS --max-time 10 "http://$EXTERNAL_IP/" -o /dev/null
+
+      - name: Probe in-cluster server endpoint via curl pod
+        id: probe_server
+        continue-on-error: true
+        run: |
+          set -e
+          kubectl -n $NAMESPACE run curl-e2e --image=curlimages/curl:8.5.0 --restart=Never --rm -i --command -- sh -lc \
+            "curl -fsS --max-time 10 http://tailspin-server.$NAMESPACE.svc.cluster.local:5100/api/games" || exit 1
+
+      - name: Decide health result
+        id: decide
+        run: |
+          set +e
+          OK=1
+          [ "${{ steps.probe_client.outcome }}" = "success" ] || OK=0
+          [ "${{ steps.probe_server.outcome }}" = "success" ] || OK=0
+          echo "ok=$OK" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aks-health-artifacts
+          path: |
+            pods.txt
+            logs.txt
+            services.txt
+
+      - name: Create issue on failure
+        if: steps.decide.outputs.ok != '1'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `AKS health check FAILED for Tailspin Toystore`;
+            const body = `Automated post-deploy health check detected a failure.\n\n` +
+              `- Client probe: ${{ steps.probe_client.outcome }}\n` +
+              `- Server in-cluster probe: ${{ steps.probe_server.outcome }}\n\n` +
+              `Attached artifacts include pods, services, and last 200 log lines.\n` +
+              `Cluster: ${process.env.AKS_CLUSTER_NAME}, Namespace: ${process.env.NAMESPACE}`;
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              assignees: ['copilot']
+            });
+            core.setOutput('issue_number', issue.data.number);

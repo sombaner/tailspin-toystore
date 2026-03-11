@@ -1,3 +1,4 @@
+# SRE retrigger: 2026-03-11T09:31:30Z (fix resources)
 # SRE retrigger: 2026-03-11T09:20:22Z (touch)
 # SRE retrigger: 2026-03-11T09:05:40Z (touch)
 # SRE retrigger: 2026-03-10T09:04:20Z (touch)
@@ -54,7 +55,7 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3
-          resource:
+          resources:
             requests:
               cpu: "250m"
               memory: "512Mi"

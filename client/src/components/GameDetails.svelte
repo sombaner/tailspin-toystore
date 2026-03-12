@@ -63,8 +63,26 @@
         return '★'.repeat(fullStars) + (halfStar ? '½' : '') + '☆'.repeat(emptyStars);
     }
 
+    interface Comment {
+        id: number;
+        text: string;
+    }
+
     let showSupportForm = false;
     let supportComment = '';
+    let comments: Comment[] = [];
+    let nextCommentId = 1;
+
+    function submitComment(): void {
+        const trimmed = supportComment.trim();
+        if (!trimmed) return;
+        comments = [...comments, { id: nextCommentId++, text: trimmed }];
+        supportComment = '';
+    }
+
+    function deleteComment(id: number): void {
+        comments = comments.filter(c => c.id !== id);
+    }
 </script>
 
 {#if loading}
@@ -139,7 +157,38 @@
                             class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg text-slate-100 placeholder-slate-400 p-3 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all duration-300 resize-none"
                             data-testid="support-comment-input"
                         ></textarea>
+                        <div class="flex gap-3 mt-3">
+                            <button
+                                on:click={submitComment}
+                                disabled={!supportComment.trim()}
+                                class="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-all duration-300"
+                                data-testid="support-comment-submit"
+                            >
+                                Submit
+                            </button>
+                        </div>
                     </div>
+
+                    {#if comments.length > 0}
+                        <div class="mt-4 space-y-3" data-testid="support-comments-list">
+                            <h3 class="text-sm font-semibold text-slate-300">Support Comments</h3>
+                            {#each comments as comment (comment.id)}
+                                <div class="flex items-start justify-between gap-3 bg-slate-900/60 border border-slate-700/50 rounded-lg p-3" data-testid="support-comment-item">
+                                    <p class="text-slate-300 text-sm flex-1" data-testid="support-comment-text">{comment.text}</p>
+                                    <button
+                                        on:click={() => deleteComment(comment.id)}
+                                        class="text-red-400 hover:text-red-300 hover:bg-red-500/20 p-1 rounded transition-all duration-200 shrink-0"
+                                        data-testid="support-comment-delete"
+                                        aria-label="Delete comment"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
                 {/if}
             </div>
         </div>

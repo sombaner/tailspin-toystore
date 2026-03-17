@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.0",
+  "checkpoint_id": "252622aac6f5",
+  "strategy": "manual-commit",
+  "branch": "feature/sort-games",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/agents/copilot-instructions.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/25/2622aac6f5/0/metadata.json",
+      "transcript": "/25/2622aac6f5/0/full.jsonl",
+      "content_hash": "/25/2622aac6f5/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 1746,
+    "api_call_count": 5
+  }
+}

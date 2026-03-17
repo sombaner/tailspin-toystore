@@ -17,6 +17,7 @@ env:
 jobs:
   health-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       issues: write
@@ -57,10 +58,11 @@ jobs:
           set -e
           kubectl -n $NAMESPACE get pods -o wide > pods.txt
           # Capture pod logs (last 200 lines)
+          touch logs.txt
           for p in $(kubectl -n $NAMESPACE get pods -o jsonpath='{.items[*].metadata.name}'); do
             echo "==== LOGS: $p ====" >> logs.txt || true
             kubectl -n $NAMESPACE logs --tail=200 "$p" >> logs.txt || true
-            echo "\n" >> logs.txt
+            printf "\n" >> logs.txt
           done
           # Save services
           kubectl -n $NAMESPACE get svc -o wide > services.txt
@@ -123,3 +125,31 @@ jobs:
               assignees: ['copilot']
             });
             core.setOutput('issue_number', issue.data.number);
+
+      - name: Write job summary
+        if: always()
+        run: |
+          if [ "${{ steps.decide.outputs.ok }}" = "1" ]; then
+            echo "### ✅ AKS Post-Deploy Health Check PASSED" >> $GITHUB_STEP_SUMMARY
+            CLIENT_RESULT="✅ Pass"
+            SERVER_RESULT="✅ Pass"
+          else
+            echo "### ❌ AKS Post-Deploy Health Check FAILED" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.probe_client.outcome }}" = "success" ]; then
+              CLIENT_RESULT="✅ Pass"
+            else
+              CLIENT_RESULT="❌ Fail"
+            fi
+            if [ "${{ steps.probe_server.outcome }}" = "success" ]; then
+              SERVER_RESULT="✅ Pass"
+            else
+              SERVER_RESULT="❌ Fail"
+            fi
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Client rollout (tailspin-client) | $CLIENT_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Server in-cluster probe (/api/games) | $SERVER_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** $AKS_CLUSTER_NAME  **Namespace:** $NAMESPACE" >> $GITHUB_STEP_SUMMARY

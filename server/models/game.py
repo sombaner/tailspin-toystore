@@ -3,12 +3,16 @@ from .base import BaseModel
 from sqlalchemy.orm import validates, relationship
 
 class Game(BaseModel):
+    """Represents a game available for crowdfunding on the platform."""
+
     __tablename__ = 'games'
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     star_rating = db.Column(db.Float, nullable=True)
+    popularity = db.Column(db.Integer, nullable=True, default=0)
+    release_date = db.Column(db.Date, nullable=True)
     
     # Foreign keys for one-to-many relationships
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
@@ -32,11 +36,18 @@ class Game(BaseModel):
         return f'<Game {self.title}, ID: {self.id}>'
 
     def to_dict(self):
+        """Serialize the game to a dictionary with camelCase keys.
+
+        Returns:
+            Dictionary representation of the game.
+        """
         return {
             'id': self.id,
             'title': self.title,
             'description': self.description,
             'publisher': {'id': self.publisher.id, 'name': self.publisher.name} if self.publisher else None,
             'category': {'id': self.category.id, 'name': self.category.name} if self.category else None,
-            'starRating': self.star_rating  # Changed from star_rating to starRating
+            'starRating': self.star_rating,
+            'popularity': self.popularity,
+            'releaseDate': self.release_date.isoformat() if self.release_date else None,
         }

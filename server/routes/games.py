@@ -5,7 +5,20 @@ from sqlalchemy.orm import Query
 # Create a Blueprint for games routes
 games_bp = Blueprint('games', __name__)
 
+# Valid sort options mapping to SQLAlchemy order_by clauses
+SORT_OPTIONS: dict[str, list] = {
+    'popularity': [Game.popularity.desc()],
+    'rating': [Game.star_rating.desc()],
+    'release_date': [Game.release_date.desc()],
+    'title': [Game.title.asc()],
+}
+
 def get_games_base_query() -> Query:
+    """Build the base query for retrieving games with publisher and category joins.
+
+    Returns:
+        SQLAlchemy Query with outer joins on Publisher and Category.
+    """
     return db.session.query(Game).join(
         Publisher, 
         Game.publisher_id == Publisher.id, 
@@ -18,24 +31,31 @@ def get_games_base_query() -> Query:
 
 @games_bp.route('/api/games', methods=['GET'])
 def get_games() -> Response:
-    """Get all games, optionally filtered by a search query.
+    """Get all games, optionally filtered by search and sorted.
 
     Args:
         None
 
     Query Parameters:
         search: Optional query parameter to filter games by title.
+        sort: Optional sort order. One of 'popularity', 'rating', 'release_date', 'title'.
 
     Returns:
-        JSON list of games matching the search criteria, or all games if no search query.
+        JSON list of games matching the criteria.
     """
-    # Use the base query for all games
     games_query = get_games_base_query()
 
     # Apply search filter if provided
     search = request.args.get('search', '').strip()
     if search:
         games_query = games_query.filter(Game.title.ilike('%' + search + '%'))
+
+    # Apply sorting
+    sort = request.args.get('sort', '').strip()
+    if sort in SORT_OPTIONS:
+        games_query = games_query.order_by(*SORT_OPTIONS[sort])
+    else:
+        games_query = games_query.order_by(Game.title.asc())
 
     games_list = [game.to_dict() for game in games_query.all()]
     

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest
+          image: ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest # managed by GitHub Actions; base kept for sed replacement
           imagePullPolicy: Always
           env:
             - name: API_SERVER_URL

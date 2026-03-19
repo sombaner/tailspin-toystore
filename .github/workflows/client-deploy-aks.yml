@@ -19,6 +19,7 @@ env:
 jobs:
   build-and-push-client:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Explicitly set permissions following security best practices
     permissions:
       contents: read
@@ -77,6 +78,7 @@ jobs:
   deploy-client:
     needs: build-and-push-client
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Set minimum required permissions for deployment
     permissions:
       contents: read
@@ -130,3 +132,17 @@ jobs:
       - name: Get client service external IP
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client -o wide
+
+      # Write deployment summary
+      - name: Write deployment summary
+        if: always()
+        run: |
+          echo "### Client Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Namespace:** ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** ${{ env.AKS_CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_CLIENT }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          kubectl -n ${{ env.NAMESPACE }} get pods -l app=tailspin-client -o wide >> $GITHUB_STEP_SUMMARY || true  # Non-fatal: pods may not yet exist
+          echo "" >> $GITHUB_STEP_SUMMARY
+          kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client >> $GITHUB_STEP_SUMMARY || true  # Non-fatal: service info is best-effort

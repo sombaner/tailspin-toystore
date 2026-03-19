@@ -1,4 +1,5 @@
 # SRE retrigger: 2026-03-17T09:04:45Z (touch)
+# SRE track: copilot/track-aks-client-server-redeploy
 apiVersion: apps/v1
 kind: Deployment
 metadata:

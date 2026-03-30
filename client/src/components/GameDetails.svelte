@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import ReviewSection from "./ReviewSection.svelte";
     
     interface Game {
         id: number;
@@ -191,6 +192,8 @@
                     {/if}
                 {/if}
             </div>
+
+            <ReviewSection gameId={gameData.id} />
         </div>
     </div>
 {:else}

@@ -6,6 +6,7 @@ db = SQLAlchemy()
 from .category import Category
 from .game import Game
 from .publisher import Publisher
+from .review import Review
 
 def init_db(app, testing: bool = False):
     """Initialize the database

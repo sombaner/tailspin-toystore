@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from routes.games import games_bp
+from routes.reviews import reviews_bp
 from routes.debug import debug_bp
 from utils.database import init_db
 
@@ -14,6 +15,7 @@ init_db(app)
 
 # Register API blueprints
 app.register_blueprint(games_bp)
+app.register_blueprint(reviews_bp)
 
 # Enable debug endpoints only if explicitly allowed
 if os.getenv('ENABLE_DEBUG_ENDPOINTS', 'false').lower() in ('1', 'true', 'yes'):

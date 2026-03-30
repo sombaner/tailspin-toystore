@@ -1,0 +1,29 @@
+server/models/__init__.py
+  8b146051d61bf925 9
+server/models/review.py
+  8b146051d61bf925 1-7,9-16,20,22-24,26-29,33,37,40,42-49
+server/routes/reviews.py
+  8b146051d61bf925 1-8,11-13,15-17,19-20,24,30,32-33,36-38,40,42-43,46,48,53-62,71-72,74-76
+server/app.py
+  8b146051d61bf925 4,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "b6c26fa05485aa02e816425ae0961756c9829b08",
+  "prompts": {
+    "8b146051d61bf925": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "11f0e60a-e82e-4e55-9647-bd7dd60af0d0",
+        "model": "copilot/gpt-5.4"
+      },
+      "human_author": "Somnath Banerjee <sombaner@github.com>",
+      "messages": [],
+      "total_additions": 737,
+      "total_deletions": 1,
+      "accepted_lines": 651,
+      "overriden_lines": 22
+    }
+  }
+}

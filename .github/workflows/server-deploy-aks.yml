@@ -100,6 +100,51 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # Ensure the AKS cluster is running before attempting to deploy.
+      # If the cluster is in a Stopped state (e.g. cost-saving auto-shutdown),
+      # start it and wait up to 15 minutes for it to reach Running state.
+      - name: Ensure AKS cluster is running
+        run: |
+          POWER_STATE=$(az aks show \
+            -g "${{ env.AKS_RESOURCE_GROUP }}" \
+            -n "${{ env.AKS_CLUSTER_NAME }}" \
+            --query "powerState.code" -o tsv)
+          echo "AKS power state: $POWER_STATE"
+
+          if [ "$POWER_STATE" = "Stopped" ]; then
+            echo "AKS cluster is stopped. Starting..."
+            az aks start \
+              -g "${{ env.AKS_RESOURCE_GROUP }}" \
+              -n "${{ env.AKS_CLUSTER_NAME }}" \
+              --no-wait
+
+            echo "Polling for Running state (max 15 min: 30 attempts x 30s)..."
+            REACHED_RUNNING=false
+            for i in $(seq 1 30); do
+              STATE=$(az aks show \
+                -g "${{ env.AKS_RESOURCE_GROUP }}" \
+                -n "${{ env.AKS_CLUSTER_NAME }}" \
+                --query "powerState.code" -o tsv)
+              echo "Attempt $i/30: power state = $STATE"
+              if [ "$STATE" = "Running" ]; then
+                echo "✅ AKS cluster is now Running"
+                REACHED_RUNNING=true
+                break
+              fi
+              sleep 30
+            done
+            [ "$REACHED_RUNNING" = "false" ] && echo "⚠️ Polling timed out; performing final state verification..."
+
+            FINAL_STATE=$(az aks show \
+              -g "${{ env.AKS_RESOURCE_GROUP }}" \
+              -n "${{ env.AKS_CLUSTER_NAME }}" \
+              --query "powerState.code" -o tsv)
+            if [ "$FINAL_STATE" != "Running" ]; then
+              echo "❌ AKS cluster did not reach Running state. Final: $FINAL_STATE"
+              exit 1
+            fi
+          fi
+
       # Set up kubectl for AKS interactions
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4

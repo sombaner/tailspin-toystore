@@ -1,0 +1,36 @@
+docs/code-review/2026-04-13-sort-games-review.md
+  f5b6b06ce8b5b994 1-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "11da421ec68e61754c86870f64e44e390ab580a4",
+  "prompts": {
+    "15c33c49a046bcb5": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "d75801c9-4f89-4bb7-a4b2-efcc12dfbda9",
+        "model": "copilot/claude-opus-4.6"
+      },
+      "human_author": "Somnath Banerjee",
+      "messages": [],
+      "total_additions": 61,
+      "total_deletions": 9,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "f5b6b06ce8b5b994": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "6c69cc4d-de30-4f89-8f62-da7be7220c6b",
+        "model": "copilot/auto"
+      },
+      "human_author": "Somnath Banerjee",
+      "messages": [],
+      "total_additions": 498,
+      "total_deletions": 0,
+      "accepted_lines": 30,
+      "overriden_lines": 0
+    }
+  }
+}

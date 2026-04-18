@@ -1,0 +1,49 @@
+{
+  "name": "session-start-security-check",
+  "event": "SessionStart",
+  "description": "Scans session context for sensitive information and blocks session if detected",
+  "enabled": true,
+  "action": "block",
+  "script": ".github/hooks/sensitive-data-detector.sh",
+  "patterns": {
+    "credentials": [
+      "password\\s*[:=]",
+      "passwd\\s*[:=]",
+      "pwd\\s*[:=]",
+      "secret\\s*[:=]",
+      "token\\s*[:=]",
+      "api[_-]?key\\s*[:=]",
+      "apikey\\s*[:=]",
+      "Bearer\\s+[A-Za-z0-9\\-._~+/]+=*",
+      "AWS[A-Za-z0-9/+=]{40}",
+      "AKIA[0-9A-Z]{16}"
+    ],
+    "payment_cards": [
+      "\\b(?:\\d[ -]*?){13,19}\\b",
+      "card[_-]?number\\s*[:=]",
+      "cvv\\s*[:=]",
+      "cvc\\s*[:=]",
+      "expir[ey]\\s*[:=]"
+    ],
+    "personal_identification": [
+      "aadhaar\\s*[:=]",
+      "ssn\\s*[:=]",
+      "social\\s*security\\s*[:=]",
+      "\\b\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}\\b",
+      "\\b\\d{12}\\b"
+    ],
+    "email_passwords": [
+      "gmail\\.password",
+      "email.*password",
+      "outlook\\.password"
+    ]
+  },
+  "severity": "critical",
+  "logPath": "~/.copilot/logs/governance",
+  "logFile": "audit.log",
+  "onBlockActions": [
+    "log_event",
+    "end_session",
+    "notify_admin"
+  ]
+}

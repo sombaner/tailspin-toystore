@@ -20,6 +20,12 @@ variable "vnet_address_space" {
   type        = list(string)
 }
 
+variable "aks_subnet_name" {
+  description = "Name of the AKS subnet"
+  type        = string
+  default     = "snet-aks"
+}
+
 variable "aks_subnet_address_prefix" {
   description = "Address prefix for AKS subnet"
   type        = string

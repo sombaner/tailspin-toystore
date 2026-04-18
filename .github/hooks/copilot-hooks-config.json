@@ -1,0 +1,10 @@
+{
+  "hooked": [
+    {
+      "id": "session-start-security-check",
+      "enabled": true,
+      "trigger": "SessionStart",
+      "path": ".github/hooks/session-start-security-check.json"
+    }
+  ]
+}

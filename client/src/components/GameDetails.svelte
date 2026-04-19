@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import ReviewSection from "./ReviewSection.svelte";
     
     interface Game {
         id: number;
@@ -68,6 +69,40 @@
         text: string;
     }
 
+    let addedToCart = false;
+    let addingToCart = false;
+
+    function getSessionId(): string {
+        if (typeof localStorage === "undefined") return "";
+        let id = localStorage.getItem("cartSessionId");
+        if (!id) {
+            id = crypto.randomUUID();
+            localStorage.setItem("cartSessionId", id);
+        }
+        return id;
+    }
+
+    async function addToCart(): Promise<void> {
+        if (!gameData || addingToCart) return;
+        addingToCart = true;
+        try {
+            const res = await fetch("/api/cart/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: getSessionId(), game_id: gameData.id, quantity: 1 }),
+            });
+            if (res.ok) {
+                addedToCart = true;
+                window.dispatchEvent(new CustomEvent("cart-updated"));
+                setTimeout(() => { addedToCart = false; }, 2000);
+            }
+        } catch {
+            // silently fail
+        } finally {
+            addingToCart = false;
+        }
+    }
+
     let showSupportForm = false;
     let supportComment = '';
     let comments: Comment[] = [];
@@ -132,7 +167,24 @@
                 </div>
             </div>
             
-            <div class="mt-8">
+            <div class="mt-6 flex gap-3">
+                <button
+                    on:click={addToCart}
+                    disabled={addingToCart}
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                    data-testid="add-to-cart"
+                >
+                    {#if addedToCart}
+                        ✓ Added to cart!
+                    {:else if addingToCart}
+                        Adding...
+                    {:else}
+                        🛒 Add to Cart
+                    {/if}
+                </button>
+            </div>
+
+            <div class="mt-4">
                 <button 
                     on:click={() => showSupportForm = !showSupportForm}
                     class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex justify-center items-center" 
@@ -191,6 +243,8 @@
                     {/if}
                 {/if}
             </div>
+
+            <ReviewSection gameId={gameData.id} />
         </div>
     </div>
 {:else}

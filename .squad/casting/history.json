@@ -1,0 +1,10 @@
+{
+  "assignments": [
+    {
+      "assignment_id": "tailspin-001",
+      "universe": "custom",
+      "date": "2026-04-19",
+      "agents": ["Somnath", "Abhishek", "Neil", "Uma", "Nived"]
+    }
+  ]
+}

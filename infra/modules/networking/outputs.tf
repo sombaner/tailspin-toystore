@@ -19,3 +19,8 @@ output "aks_subnet_address_prefix" {
   description = "AKS subnet address prefix"
   value       = azurerm_subnet.aks.address_prefixes[0]
 }
+
+output "aks_nsg_id" {
+  description = "Network Security Group resource ID for the AKS subnet"
+  value       = azurerm_network_security_group.aks.id
+}

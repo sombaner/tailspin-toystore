@@ -1,0 +1,4 @@
+{
+  "universes": ["custom"],
+  "max_agents_per_universe": 10
+}

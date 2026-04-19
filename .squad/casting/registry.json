@@ -1,0 +1,9 @@
+{
+  "agents": [
+    {"persistent_name": "Somnath", "role": "Backend Engineer", "universe": "custom", "created_at": "2026-04-19", "legacy_named": false, "status": "active"},
+    {"persistent_name": "Abhishek", "role": "Frontend Engineer", "universe": "custom", "created_at": "2026-04-19", "legacy_named": false, "status": "active"},
+    {"persistent_name": "Neil", "role": "Test Engineer", "universe": "custom", "created_at": "2026-04-19", "legacy_named": false, "status": "active"},
+    {"persistent_name": "Uma", "role": "Database Engineer", "universe": "custom", "created_at": "2026-04-19", "legacy_named": false, "status": "active"},
+    {"persistent_name": "Nived", "role": "DevOps/Infra Engineer", "universe": "custom", "created_at": "2026-04-19", "legacy_named": false, "status": "active"}
+  ]
+}

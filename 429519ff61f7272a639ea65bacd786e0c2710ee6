@@ -1,0 +1,38 @@
+server/utils/seed_database.py
+  h_5257263ddcda8f 4,71-77,86-87
+server/routes/games.py
+  h_5257263ddcda8f 1,8-14,29-38,41
+client/e2e-tests/games.spec.ts
+  h_5257263ddcda8f 133-149
+client/src/components/GameList.svelte
+  h_5257263ddcda8f 14-16,22-24,26-34,36,38-44,57-59,61-68,73-78,84-116
+server/tests/test_games.py
+  h_5257263ddcda8f 3,26-28,35-37,121-122,135,145,153,181-204,206-240
+server/models/game.py
+  h_5257263ddcda8f 12-13,43-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "429519ff61f7272a639ea65bacd786e0c2710ee6",
+  "prompts": {
+    "dda2e77c6da3eb38": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "ad95d901-a115-4060-81ed-df7e1ff10092",
+        "model": "copilot/gpt-5.4"
+      },
+      "human_author": "Somnath Banerjee",
+      "messages": [],
+      "total_additions": 372,
+      "total_deletions": 0,
+      "accepted_lines": 370,
+      "overriden_lines": 4
+    }
+  },
+  "humans": {
+    "h_5257263ddcda8f": {
+      "author": "Somnath Banerjee"
+    }
+  }
+}

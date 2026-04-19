@@ -1,5 +1,5 @@
 ---
-// Import any necessary dependencies
+import CartButton from './CartButton.svelte';
 ---
 
 <header class="bg-blue-500 dark:bg-blue-700 text-white p-4 shadow-md transition-colors duration-300">
@@ -20,6 +20,9 @@
         </nav>
       </div>
       <h1 class="text-xl font-bold"><a href="/" class="hover:underline">Tailspin Toys</a></h1>
+    </div>
+    <div class="flex items-center">
+      <CartButton client:load />
     </div>
   </div>
 </header>

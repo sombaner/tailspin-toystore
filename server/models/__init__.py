@@ -7,6 +7,9 @@ from .category import Category
 from .game import Game
 from .publisher import Publisher
 from .review import Review
+from .cart import Cart
+from .cart_item import CartItem
+from .payment import Payment
 
 def init_db(app, testing: bool = False):
     """Initialize the database

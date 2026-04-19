@@ -13,6 +13,7 @@ class Game(BaseModel):
     star_rating = db.Column(db.Float, nullable=True)
     popularity = db.Column(db.Integer, nullable=True, default=0)
     release_date = db.Column(db.Date, nullable=True)
+    price = db.Column(db.Float, nullable=False, default=0.0)
     
     # Foreign keys for one-to-many relationships
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
@@ -51,4 +52,5 @@ class Game(BaseModel):
             'starRating': self.star_rating,
             'popularity': self.popularity,
             'releaseDate': self.release_date.isoformat() if self.release_date else None,
+            'price': self.price,
         }

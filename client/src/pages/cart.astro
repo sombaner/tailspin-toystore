@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CartPage from '../components/CartPage.svelte';
+import "../styles/global.css";
+
+export const prerender = false;
+---
+
+<Layout title="Your Cart - Tailspin Toys">
+  <div class="py-8 max-w-4xl mx-auto">
+    <CartPage client:load />
+  </div>
+</Layout>

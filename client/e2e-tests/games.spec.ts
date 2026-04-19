@@ -130,4 +130,21 @@ test.describe('Game Listing and Navigation', () => {
       await expect(page).toHaveTitle(/Game Details - Tailspin Toys/);
     });
   });
+
+  test('should display search input and filter games', async ({ page }) => {
+    await test.step('Navigate to homepage and wait for games to load', async () => {
+      await page.goto('/');
+      await expect(page.getByTestId('games-grid')).toBeVisible();
+    });
+
+    await test.step('Verify search and sort controls are visible', async () => {
+      await expect(page.getByTestId('game-search-input')).toBeVisible();
+      await expect(page.getByTestId('game-sort-select')).toBeVisible();
+    });
+
+    await test.step('Filter to no matching games', async () => {
+      await page.getByTestId('game-search-input').fill('zzzznonexistent');
+      await expect(page.getByTestId('game-card')).toHaveCount(0, { timeout: 10000 });
+    });
+  });
 });

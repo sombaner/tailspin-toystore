@@ -1,6 +1,7 @@
 import csv
 import os
 import random
+from datetime import date, timedelta
 from flask import Flask
 from models import db, Category, Game, Publisher
 from utils.database import get_connection_string
@@ -67,6 +68,13 @@ def create_games():
                 
                 # Generate random star rating between 3.0 and 5.0 (one decimal place)
                 star_rating = round(random.uniform(3.0, 5.0), 1)
+
+                # Generate random popularity score (0-10000)
+                popularity = random.randint(100, 10000)
+
+                # Generate random release date within the last 3 years
+                days_ago = random.randint(0, 3 * 365)
+                release_date = date.today() - timedelta(days=days_ago)
                 
                 # Create the game with enhanced description for crowdfunding context
                 game = Game(
@@ -75,6 +83,8 @@ def create_games():
                     category_id=categories[category_name].id,
                     publisher_id=publishers[publisher_name].id,
                     star_rating=star_rating,
+                    popularity=popularity,
+                    release_date=release_date,
                 )
                 db.session.add(game)
             

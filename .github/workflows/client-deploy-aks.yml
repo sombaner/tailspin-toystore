@@ -50,13 +50,13 @@ jobs:
             ${{ env.IMAGE_CLIENT }}:latest
             ${{ env.IMAGE_CLIENT }}:${{ github.sha }}
 
-      # Make the client image package public
+      # Make the client image package public (package name is URL-encoded nested path)
       - name: Make client image public
         run: |
           curl -L -X PATCH \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/user/packages/container/tailspin-client/visibility \
+            https://api.github.com/user/packages/container/tailspin-toystore%2Ftailspin-client/visibility \
             -d '{"visibility":"public"}'
 
       # Render client deployment manifest with correct image tag

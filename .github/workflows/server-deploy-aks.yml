@@ -50,13 +50,13 @@ jobs:
             ${{ env.IMAGE_SERVER }}:latest
             ${{ env.IMAGE_SERVER }}:${{ github.sha }}
 
-      # Make the server image package public
+      # Make the server image package public (package name is URL-encoded nested path)
       - name: Make server image public
         run: |
           curl -L -X PATCH \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/user/packages/container/tailspin-server/visibility \
+            https://api.github.com/user/packages/container/tailspin-toystore%2Ftailspin-server/visibility \
             -d '{"visibility":"public"}'
 
       # Render server deployment manifest with correct image tag

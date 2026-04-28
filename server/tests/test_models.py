@@ -1,4 +1,5 @@
 import unittest
+from datetime import date
 from typing import Dict, Any
 from flask import Flask
 from models import Game, Publisher, Category, db
@@ -144,6 +145,101 @@ class TestModels(unittest.TestCase):
             # Verify publisher was created with None description
             self.assertIsNotNone(publisher.id)
             self.assertIsNone(publisher.description)
+
+    def test_game_to_dict_serializes_relationships_and_optional_fields(self) -> None:
+        """Test that game serialization includes related objects and nullable fields"""
+        with self.app.app_context():
+            publisher = Publisher(**self.TEST_DATA["valid_publisher"])
+            category = Category(**self.TEST_DATA["valid_category"])
+            db.session.add_all([publisher, category])
+            db.session.commit()
+
+            release_date = date(2025, 1, 15)
+            game = Game(
+                title=self.TEST_DATA["valid_game"]["title"],
+                description=self.TEST_DATA["valid_game"]["description"],
+                publisher=publisher,
+                category=category,
+                star_rating=self.TEST_DATA["valid_game"]["star_rating"],
+                popularity=42,
+                release_date=release_date,
+            )
+            db.session.add(game)
+            db.session.commit()
+
+            serialized_game = game.to_dict()
+
+            self.assertEqual(serialized_game["title"], self.TEST_DATA["valid_game"]["title"])
+            self.assertEqual(serialized_game["publisher"], {"id": publisher.id, "name": publisher.name})
+            self.assertEqual(serialized_game["category"], {"id": category.id, "name": category.name})
+            self.assertEqual(serialized_game["starRating"], self.TEST_DATA["valid_game"]["star_rating"])
+            self.assertEqual(serialized_game["popularity"], 42)
+            self.assertEqual(serialized_game["releaseDate"], release_date.isoformat())
+
+    def test_game_to_dict_handles_missing_optional_relationships(self) -> None:
+        """Test that game serialization preserves None values for optional fields"""
+        with self.app.app_context():
+            publisher = Publisher(**self.TEST_DATA["valid_publisher"])
+            category = Category(**self.TEST_DATA["valid_category"])
+            db.session.add_all([publisher, category])
+            db.session.commit()
+
+            game = Game(
+                title=self.TEST_DATA["valid_game"]["title"],
+                description=self.TEST_DATA["valid_game"]["description"],
+                publisher=publisher,
+                category=category,
+                star_rating=None,
+                popularity=None,
+                release_date=None,
+            )
+            db.session.add(game)
+            db.session.commit()
+
+            serialized_game = game.to_dict()
+
+            self.assertIsNone(serialized_game["starRating"])
+            self.assertEqual(serialized_game["popularity"], 0)
+            self.assertIsNone(serialized_game["releaseDate"])
+
+    def test_publisher_and_category_to_dict_include_game_counts(self) -> None:
+        """Test that publisher and category serialization report related game counts"""
+        with self.app.app_context():
+            publisher = Publisher(**self.TEST_DATA["valid_publisher"])
+            category = Category(**self.TEST_DATA["valid_category"])
+            db.session.add_all([publisher, category])
+            db.session.commit()
+
+            first_game = Game(
+                title="Test Game Alpha",
+                description="An exciting test game with lots of alpha features",
+                publisher=publisher,
+                category=category,
+                star_rating=4.0,
+            )
+            second_game = Game(
+                title="Test Game Beta",
+                description="An exciting test game with lots of beta features",
+                publisher=publisher,
+                category=category,
+                star_rating=4.8,
+            )
+            db.session.add_all([first_game, second_game])
+            db.session.commit()
+
+            self.assertEqual(publisher.to_dict()["game_count"], 2)
+            self.assertEqual(category.to_dict()["game_count"], 2)
+
+    def test_publisher_and_category_to_dict_return_zero_without_games(self) -> None:
+        """Test that publisher and category serialization return zero when no games exist"""
+        with self.app.app_context():
+            publisher = Publisher(**self.TEST_DATA["valid_publisher"])
+            category = Category(**self.TEST_DATA["valid_category"])
+            db.session.add_all([publisher, category])
+            db.session.commit()
+
+            self.assertEqual(publisher.to_dict()["game_count"], 0)
+            self.assertEqual(category.to_dict()["game_count"], 0)
 
 if __name__ == '__main__':
     unittest.main()

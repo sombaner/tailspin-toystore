@@ -196,6 +196,15 @@ class TestGamesRoutes(unittest.TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['title'], 'Pipeline Panic')
 
+    def test_search_games_trims_whitespace(self) -> None:
+        """Test that search terms are trimmed before filtering results"""
+        response = self.client.get(f'{self.GAMES_API_PATH}?search=  Pipeline  ')
+        data = self._get_response_data(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['title'], 'Pipeline Panic')
+
     def test_search_games_no_results(self) -> None:
         """Test searching games with no matching results"""
         response = self.client.get(f'{self.GAMES_API_PATH}?search=nonexistent')
@@ -207,6 +216,15 @@ class TestGamesRoutes(unittest.TestCase):
     def test_sort_by_popularity(self) -> None:
         """Test sorting games by popularity descending"""
         response = self.client.get(f'{self.GAMES_API_PATH}?sort=popularity')
+        data = self._get_response_data(response)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data[0]['title'], 'Agile Adventures')
+        self.assertEqual(data[1]['title'], 'Pipeline Panic')
+
+    def test_sort_option_trims_whitespace(self) -> None:
+        """Test sorting trims whitespace before applying supported options"""
+        response = self.client.get(f'{self.GAMES_API_PATH}?sort= popularity ')
         data = self._get_response_data(response)
 
         self.assertEqual(response.status_code, 200)

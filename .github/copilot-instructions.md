@@ -60,6 +60,8 @@ This is a crowdfunding platform for games with a developer theme. The applicatio
     - `scripts/setup-env.sh`: Performs installation of all Python and Node dependencies
     - `scripts/run-server-tests.sh`: Calls setup-env, then runs all Python tests
     - `scripts/start-app.sh`: Calls setup-env, then starts both backend and frontend servers
+  - `run_and_score.sh`: Activates the local environment and runs the immutable backend test scoring harness
+  - `scripts/run_and_score.py`: Repeats backend tests, estimates coverage for models/routes, detects flakiness, and emits a single-line score summary
 
 ## Repository Structure
 
@@ -74,5 +76,14 @@ This is a crowdfunding platform for games with a developer theme. The applicatio
   - `src/pages/`: Astro page routes
   - `src/styles/`: CSS and Tailwind configuration
 - `scripts/`: Development and deployment scripts
+- `run_and_score.sh`: Immutable backend test scoring entrypoint for test-improvement loops
+- `testplan.md`: Human-layer plan for autonomous test-improvement sessions
 - `data/`: Database files
 - `README.md`: Project documentation
+
+## Test Improvement Workflow
+
+- When working on autonomous test-improvement tasks, treat `testplan.md` as the human-layer source of truth.
+- Limit autonomous edits to `server/tests/test_*.py` unless the user explicitly expands scope.
+- Do not modify `run_and_score.sh` or `scripts/run_and_score.py` as part of a scoring loop iteration.
+- Use `./run_and_score.sh` to evaluate whether a test-only change improved the baseline without introducing flakiness.

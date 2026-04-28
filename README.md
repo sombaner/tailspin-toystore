@@ -18,6 +18,12 @@ A script file has been created to launch the site. You can run it by:
 
 Then navigate to the [website](http://localhost:4321) to see the site!
 
+## Test Improvement Loop
+
+The repository now includes an immutable backend test scoring harness at `./run_and_score.sh` and a human guidance document at `./testplan.md`.
+
+Use the harness to repeat the backend test suite, estimate line coverage for `server/models` and `server/routes`, detect flaky runs, and emit a single summary line suitable for autonomous test-improvement loops.
+
 ## License 
 
 This project is licensed under the terms of the MIT open source license. Please refer to the [LICENSE](./LICENSE) for the full terms.

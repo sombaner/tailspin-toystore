@@ -158,4 +158,17 @@ for attempt in range(3):
 [code examples]
 ```
 
+## Tailspin Toys Project-Specific Checks
+
+This repo is a Flask + Astro/Svelte crowdfunding platform deployed on Azure AKS.
+
+**Priority review areas:**
+- **Debug endpoints**: Check for `ENABLE_DEBUG_ENDPOINTS` guards — debug routes must never be exposed without this flag
+- **Proxy trust boundaries**: `client/src/middleware.ts` proxies `/api/*` to Flask backend — verify no unsafe header/body forwarding
+- **SQLAlchemy ORM**: All queries must use ORM (no raw SQL). Watch for unsafe `.filter()` with string interpolation
+- **Payment data**: Routes in `server/routes/` handling financial data must minimize PII exposure and validate input
+- **CORS/Auth**: Flask API has no built-in auth — flag any endpoint that handles sensitive data without access controls
+- **Environment config**: No secrets in code or K8s manifests — use environment variables or Azure Key Vault
+- **Container security**: Dockerfiles use `python:3.11-slim` and `node:lts` — flag any base image changes or privilege escalation
+
 Remember: Goal is enterprise-grade code that is secure, maintainable, and compliant.

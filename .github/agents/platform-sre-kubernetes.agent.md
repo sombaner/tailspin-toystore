@@ -107,6 +107,29 @@ Pre-deployment:
 - [ ] Rollback: Plan tested and documented
 - [ ] Network: Policies for least-privilege access
 
+## Tailspin Toys K8s Context
+
+This repo deploys to Azure AKS with these specifics:
+
+**Namespace**: `tail-spin`
+**Components**:
+- `tailspin-server`: Flask API, port `5100`, image `ghcr.io/OWNER/REPO/tailspin-server:latest`
+- `tailspin-client`: Astro frontend, port `4321`, image `ghcr.io/OWNER/REPO/tailspin-client:latest`
+
+**Services**:
+- Server: `ClusterIP` (internal only)
+- Client: `LoadBalancer` (external-facing)
+
+**Known demo-mode defaults to challenge in production reviews:**
+- `:latest` tags → require specific version tags or digests
+- `replicas: 1` → require 2+ for HA
+- `ENABLE_DEBUG_ENDPOINTS=true` → must be `false` in production
+- SQLite volume mounts → flag as non-scalable, recommend external database
+
+**Health probes**:
+- Server: liveness/readiness on `/api/health` (or appropriate Flask health endpoint)
+- Client: liveness/readiness on `/` or appropriate Astro endpoint
+
 ## Important Reminders
 
 1. Always run dry-run validation before deployment

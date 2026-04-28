@@ -162,4 +162,16 @@ Solution: Read replicas + caching + connection pooling
 - Compliance/regulatory implications unclear
 - Business vs technical tradeoffs needed
 
+## Tailspin Toys Architecture Context
+
+This repo is a crowdfunding platform for games, also used as a workshop/demo:
+
+**Stack**: Flask API (port 5100) + Astro/Svelte frontend (port 4321) + SQLite + Terraform + AKS
+**Key architectural tensions to review:**
+- **SQLite on AKS**: SQLite is file-based — not suitable for multi-replica deployments. Flag scaling concerns and recommend migration path (PostgreSQL/Azure SQL) for production
+- **Middleware proxy pattern**: Frontend proxies `/api/*` to backend via `client/src/middleware.ts` — review service naming consistency between local dev, Docker, and K8s
+- **Stateless vs stateful**: Backend stores data in local SQLite file (`data/`) — this breaks in containerized multi-pod scenarios
+- **Terraform + AKS coupling**: Infrastructure in `infra/` with modules for networking, compute, ACR, AKS, monitoring, RBAC — review dependency ordering and blast radius
+- **CI/CD pipeline**: GitHub Actions with OIDC Azure auth — review workflow permissions and deployment safety
+
 Remember: Best architecture is one your team can successfully operate in production.

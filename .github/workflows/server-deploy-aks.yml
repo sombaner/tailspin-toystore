@@ -111,22 +111,41 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists
+      # Check AKS cluster power state; skip kubectl steps if cluster is not Running
+      - name: Check AKS cluster power state
+        id: aks-state
+        run: |
+          POWER_STATE=$(az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" \
+            --output tsv 2>/dev/null || echo "Unknown")
+          echo "power_state=$POWER_STATE" >> $GITHUB_OUTPUT
+          echo "AKS cluster power state: $POWER_STATE"
+          if [ "$POWER_STATE" != "Running" ]; then
+            echo "::warning::AKS cluster '${{ env.AKS_CLUSTER_NAME }}' is '$POWER_STATE'. Deployment skipped. Images built and pushed to GHCR successfully."
+          fi
+
+      # Ensure namespace exists (only when AKS is Running)
       - name: Create namespace if not exists
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl apply -f render/namespace.yaml
 
-      # Deploy only the server component
+      # Deploy only the server component (only when AKS is Running)
       - name: Deploy server
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
 
-      # Wait for server rollout to complete
+      # Wait for server rollout to complete (only when AKS is Running)
       - name: Wait for server rollout
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
 
-      # Display server service status
+      # Display server service status (only when AKS is Running)
       - name: Get server service status
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide

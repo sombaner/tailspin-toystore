@@ -111,22 +111,41 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists
+      # Check AKS cluster power state; skip kubectl steps if cluster is not Running
+      - name: Check AKS cluster power state
+        id: aks-state
+        run: |
+          POWER_STATE=$(az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" \
+            --output tsv 2>/dev/null || echo "Unknown")
+          echo "power_state=$POWER_STATE" >> $GITHUB_OUTPUT
+          echo "AKS cluster power state: $POWER_STATE"
+          if [ "$POWER_STATE" != "Running" ]; then
+            echo "::warning::AKS cluster '${{ env.AKS_CLUSTER_NAME }}' is '$POWER_STATE'. Deployment skipped. Images built and pushed to GHCR successfully."
+          fi
+
+      # Ensure namespace exists (only when AKS is Running)
       - name: Create namespace if not exists
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl apply -f render/namespace.yaml
 
-      # Deploy only the client component
+      # Deploy only the client component (only when AKS is Running)
       - name: Deploy client
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/client.yaml
 
-      # Wait for client rollout to complete
+      # Wait for client rollout to complete (only when AKS is Running)
       - name: Wait for client rollout
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-client --timeout=180s
 
-      # Display client service external IP
+      # Display client service external IP (only when AKS is Running)
       - name: Get client service external IP
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client -o wide

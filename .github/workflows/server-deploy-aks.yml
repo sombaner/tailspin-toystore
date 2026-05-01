@@ -111,22 +111,38 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
+      # Check if AKS cluster is accessible (cluster may be stopped)
+      - name: Check AKS cluster accessibility
+        id: cluster-check
+        run: |
+          if kubectl cluster-info --request-timeout=15s > /dev/null 2>&1; then
+            echo "accessible=true" >> $GITHUB_OUTPUT
+            echo "✅ AKS cluster is accessible - deployment will proceed"
+          else
+            echo "accessible=false" >> $GITHUB_OUTPUT
+            echo "⚠️ AKS cluster is not accessible (cluster may be stopped) - skipping deployment steps"
+          fi
+
       # Ensure namespace exists
       - name: Create namespace if not exists
+        if: steps.cluster-check.outputs.accessible == 'true'
         run: |
           kubectl apply -f render/namespace.yaml
 
       # Deploy only the server component
       - name: Deploy server
+        if: steps.cluster-check.outputs.accessible == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
 
       # Wait for server rollout to complete
       - name: Wait for server rollout
+        if: steps.cluster-check.outputs.accessible == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
 
       # Display server service status
       - name: Get server service status
+        if: steps.cluster-check.outputs.accessible == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide

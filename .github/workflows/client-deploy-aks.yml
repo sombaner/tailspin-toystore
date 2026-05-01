@@ -110,7 +110,9 @@ jobs:
             --query "powerState.code" -o tsv 2>/dev/null || echo "Unknown")
           echo "power_state=$POWER_STATE" >> $GITHUB_OUTPUT
           echo "AKS cluster power state: $POWER_STATE"
-          if [ "$POWER_STATE" != "Running" ]; then
+          if [ "$POWER_STATE" = "Unknown" ]; then
+            echo "::warning::Could not determine AKS cluster ${{ env.AKS_CLUSTER_NAME }} power state (check Azure credentials/permissions). kubectl deploy steps will be skipped."
+          elif [ "$POWER_STATE" != "Running" ]; then
             echo "::warning::AKS cluster ${{ env.AKS_CLUSTER_NAME }} is $POWER_STATE — kubectl deploy steps will be skipped."
           fi
 

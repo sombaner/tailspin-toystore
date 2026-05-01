@@ -100,33 +100,53 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # Set up kubectl for AKS interactions
+      # Check AKS cluster power state before attempting kubectl operations
+      - name: Check AKS cluster power state
+        id: aks-state
+        run: |
+          POWER_STATE=$(az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" -o tsv 2>/dev/null || echo "Unknown")
+          echo "power_state=$POWER_STATE" >> $GITHUB_OUTPUT
+          echo "AKS cluster power state: $POWER_STATE"
+          if [ "$POWER_STATE" != "Running" ]; then
+            echo "::warning::AKS cluster ${{ env.AKS_CLUSTER_NAME }} is $POWER_STATE — kubectl deploy steps will be skipped."
+          fi
+
+      # Set up kubectl for AKS interactions (only when cluster is running)
       - name: Setup kubectl
+        if: steps.aks-state.outputs.power_state == 'Running'
         uses: azure/setup-kubectl@v4
 
-      # Get credentials for the target AKS cluster
+      # Get credentials for the target AKS cluster (only when cluster is running)
       - name: Get AKS credentials
+        if: steps.aks-state.outputs.power_state == 'Running'
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists
+      # Ensure namespace exists (only when cluster is running)
       - name: Create namespace if not exists
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl apply -f render/namespace.yaml
 
-      # Deploy only the client component
+      # Deploy only the client component (only when cluster is running)
       - name: Deploy client
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/client.yaml
 
-      # Wait for client rollout to complete
+      # Wait for client rollout to complete (only when cluster is running)
       - name: Wait for client rollout
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-client --timeout=180s
 
-      # Display client service external IP
+      # Display client service external IP (only when cluster is running)
       - name: Get client service external IP
+        if: steps.aks-state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client -o wide

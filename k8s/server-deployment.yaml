@@ -1,4 +1,4 @@
-# SRE retrigger: 2026-05-05T09:32:46Z (touch)
+# SRE retrigger: 2026-05-05T09:39:20Z (touch; confirm GHCR image path and no imagePullSecret)
 apiVersion: apps/v1
 kind: Deployment
 metadata:

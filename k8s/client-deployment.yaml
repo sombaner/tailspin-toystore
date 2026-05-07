@@ -1,4 +1,4 @@
-# SRE retrigger: 2026-05-06T09:10:45Z (touch; confirm GHCR image path and no imagePullSecret)
+# SRE fix: 2026-05-07T09:05Z (confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets)
 apiVersion: apps/v1
 kind: Deployment
 metadata:

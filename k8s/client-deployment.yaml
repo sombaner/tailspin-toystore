@@ -67,3 +67,5 @@ spec:
       port: 80
       targetPort: 4321
       protocol: TCP
+
+# no-op: 2026-05-09T09:03Z touch for CI trigger

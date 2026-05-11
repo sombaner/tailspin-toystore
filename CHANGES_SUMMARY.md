@@ -117,3 +117,42 @@ tailspin-server-xxxxxxxxxx-xxxxx   1/1     Running   0          2m
 ## If Something Goes Wrong
 
 See the troubleshooting section in DEPLOYMENT_INSTRUCTIONS.md for common issues and solutions.
+
+## CI Evidence Log (2026-05-11)
+
+### Workflow run URLs and final statuses
+
+#### Build and Deploy Client to AKS
+- SHA `bdd769a72768fe460fca4afdc13371412f2c7580`: **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25486591025
+- SHA `4a247b891a2d0783b3cc107073fe5af864e5d3f3`: **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25597244622
+- SHA `5503aff865ea014492bd379da4e288b82af1ebd9` (no-op trigger): **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25660812444
+
+#### Build and Deploy Server to AKS
+- SHA `bdd769a72768fe460fca4afdc13371412f2c7580`: **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25486590814
+- SHA `4a247b891a2d0783b3cc107073fe5af864e5d3f3`: **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25597244606
+- SHA `08b34d203a429f5c42442ed59f9399f04f697f76` (no-op trigger): **failure**  
+  https://github.com/sombaner/tailspin-toystore/actions/runs/25660813177
+
+### CI-first health review from workflow logs
+
+- **Build stage health (client/server): healthy**
+  - `build-and-push-client` and `build-and-push-server` jobs completed successfully on the latest runs.
+  - Evidence:
+    - Client build job: https://github.com/sombaner/tailspin-toystore/actions/runs/25660812444/job/75320611871
+    - Server build job: https://github.com/sombaner/tailspin-toystore/actions/runs/25660813177/job/75320613620
+- **Deploy stage health (client/server): blocked by AKS endpoint reachability**
+  - `deploy-client` and `deploy-server` fail at `kubectl apply -f render/namespace.yaml` before deployment/rollout steps.
+  - Error observed in both jobs: `failed to download openapi ... dial tcp ... no such host` for AKS API FQDN.
+  - Evidence:
+    - Client deploy job: https://github.com/sombaner/tailspin-toystore/actions/runs/25660812444/job/75320981069
+    - Server deploy job: https://github.com/sombaner/tailspin-toystore/actions/runs/25660813177/job/75320804402
+- **Rollout/pod/service/log readiness visibility:** not available from CI because deploy steps are skipped after namespace apply failure.
+
+### Traceability note
+
+The links/statuses above are the exact values to copy into Issue `#368` for audit traceability.

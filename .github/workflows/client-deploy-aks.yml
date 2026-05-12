@@ -56,7 +56,7 @@ jobs:
           curl -L -X PATCH \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/user/packages/container/tailspin-client/visibility \
+            https://api.github.com/user/packages/container/tailspin-toystore%2Ftailspin-client/visibility \
             -d '{"visibility":"public"}'
 
       # Render client deployment manifest with correct image tag
@@ -64,7 +64,7 @@ jobs:
         id: kustomize
         run: |
           mkdir -p render
-          sed "s|ghcr.io/sombaner/tailspin-toystore/tailspin-client:latest|${{ env.IMAGE_CLIENT }}:${{ github.sha }}|" k8s/client-deployment.yaml > render/client.yaml
+          sed "s|${{ env.IMAGE_CLIENT }}:latest|${{ env.IMAGE_CLIENT }}:${{ github.sha }}|" k8s/client-deployment.yaml > render/client.yaml
           cp k8s/namespace.yaml render/namespace.yaml
 
       # Upload rendered client manifests for deployment job

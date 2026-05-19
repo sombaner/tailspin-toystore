@@ -73,3 +73,5 @@ spec:
 # no-op: 2026-05-11T09:23Z touch for CI trigger
 # no-op: 2026-05-11T09:28Z touch for CI trigger
 # no-op: 2026-05-11T09:43Z touch for CI trigger
+# ci-touch: 2026-05-19T09:20Z trigger deploy
+# ci-touch: 2026-05-19T09:27Z trigger deploy

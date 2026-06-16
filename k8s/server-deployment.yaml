@@ -1,3 +1,5 @@
+# ci-touch: 2026-06-16T09:11Z trigger deploy workflows
+# no functional changes
 # SRE fix: 2026-05-07T09:05Z (confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets)
 apiVersion: apps/v1
 kind: Deployment
@@ -65,39 +67,3 @@ spec:
       protocol: TCP
       port: 5100
       targetPort: 5100
-
-# no-op: 2026-05-09T09:03Z touch for CI trigger
-# no-op: 2026-05-10T09:05Z touch for CI trigger
-# no-op: 2026-05-11T09:04Z touch for CI trigger
-# no-op: 2026-05-11T09:10Z touch for CI trigger
-# no-op: 2026-05-11T09:23Z touch for CI trigger
-# no-op: 2026-05-11T09:28Z touch for CI trigger
-# no-op: 2026-05-11T09:43Z touch for CI trigger
-# no-op: 2026-05-19T09:32Z touch for CI trigger
-# no-op: 2026-05-20T09:03Z touch for CI trigger
-# no-op: 2026-05-21T09:03Z touch for CI trigger
-# no-op: 2026-05-21T09:06Z touch for CI trigger
-# ci-touch: 2026-05-23T09:08Z trigger deploy workflows
-# ci-touch: 2026-05-24T09:10Z trigger deploy workflows
-# ci-touch: 2026-05-25T09:06Z trigger deploy workflows
-# ci-touch: 2026-05-25T09:12Z trigger deploy workflows
-# ci-touch: 2026-05-26T09:04Z trigger deploy workflows
-# ci-touch: 2026-05-27T09:07Z trigger deploy workflows
-# ci-touch: 2026-05-28T09:03Z trigger deploy workflows
-# ci-touch: 2026-05-28T09:08Z trigger deploy workflows
-# ci-touch: 2026-05-28T09:12Z trigger deploy workflows
-# ci-touch: 2026-05-30T09:02Z trigger deploy workflows
-# ci-touch: 2026-05-31T09:03Z trigger deploy workflows
-# ci-touch: 2026-06-09T09:04Z trigger deploy workflows
-# ci-touch: 2026-06-10T09:03Z trigger deploy workflows
-# ci-touch: 2026-06-10T09:13Z trigger deploy workflows
-# ci-touch: 2026-06-10T09:18Z trigger deploy workflows
-# ci-touch: 2026-06-11T09:02Z trigger deploy workflows
-# ci-touch: 2026-06-11T09:09Z trigger deploy workflows
-# ci-touch: 2026-06-11T09:14Z trigger deploy workflows
-# ci-touch: 2026-06-12T09:04Z trigger deploy workflows
-# ci-touch: 2026-06-12T09:08Z trigger deploy workflows
-# ci-touch: 2026-06-13T09:03Z trigger deploy workflows
-# ci-touch: 2026-06-13T09:07Z trigger deploy workflows
-# ci-touch: 2026-06-14T09:02Z trigger deploy workflows
-# ci-touch: 2026-06-14T09:08Z trigger deploy workflows

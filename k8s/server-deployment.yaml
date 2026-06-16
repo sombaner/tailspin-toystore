@@ -1,6 +1,6 @@
-# ci-touch: 2026-06-16T09:18Z trigger deploy workflows
+# ci-touch: 2026-06-16T09:26Z trigger deploy workflows (server)
 # no functional changes
-# SRE fix: 2026-05-07T09:05Z (confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets)
+# SRE fix: confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets
 apiVersion: apps/v1
 kind: Deployment
 metadata:

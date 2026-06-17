@@ -100,6 +100,33 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # Start the cluster if it is stopped so that kubectl commands succeed
+      - name: Ensure AKS cluster is running
+        run: |
+          set -e
+          POWER_STATE=$(az aks show \
+            --resource-group "${{ env.AKS_RESOURCE_GROUP }}" \
+            --name "${{ env.AKS_CLUSTER_NAME }}" \
+            --query 'powerState.code' -o tsv)
+          echo "Cluster power state: $POWER_STATE"
+          if [ "$POWER_STATE" = "Stopped" ]; then
+            echo "Starting AKS cluster..."
+            az aks start \
+              --resource-group "${{ env.AKS_RESOURCE_GROUP }}" \
+              --name "${{ env.AKS_CLUSTER_NAME }}"
+            for i in $(seq 1 30); do
+              POWER_STATE=$(az aks show \
+                --resource-group "${{ env.AKS_RESOURCE_GROUP }}" \
+                --name "${{ env.AKS_CLUSTER_NAME }}" \
+                --query 'powerState.code' -o tsv)
+              echo "  Poll $i/30: $POWER_STATE"
+              [ "$POWER_STATE" = "Running" ] && break
+              sleep 30
+            done
+            [ "$POWER_STATE" = "Running" ] || { echo "Cluster did not start in time"; exit 1; }
+          fi
+          echo "Cluster is Running"
+
       # Set up kubectl for AKS interactions
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4

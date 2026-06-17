@@ -51,11 +51,20 @@ jobs:
           set -e
           kubectl -n $NAMESPACE rollout status deploy/tailspin-server --timeout=180s || true
 
+      # Confirm image tags on both deployments per post-deploy validation requirements
+      - name: Describe deployments (confirm image tags)
+        run: |
+          set -e
+          echo "=== tailspin-server ===" | tee describe.txt
+          kubectl -n $NAMESPACE describe deploy tailspin-server >> describe.txt 2>&1 || true
+          echo "=== tailspin-client ===" | tee -a describe.txt
+          kubectl -n $NAMESPACE describe deploy tailspin-client >> describe.txt 2>&1 || true
+
       - name: Gather pod status and logs
         id: gather
         run: |
           set -e
-          kubectl -n $NAMESPACE get pods -o wide > pods.txt
+          kubectl -n $NAMESPACE get deploy,svc,pods -o wide > pods.txt
           # Capture pod logs (last 200 lines)
           for p in $(kubectl -n $NAMESPACE get pods -o jsonpath='{.items[*].metadata.name}'); do
             echo "==== LOGS: $p ====" >> logs.txt || true
@@ -102,6 +111,7 @@ jobs:
             pods.txt
             logs.txt
             services.txt
+            describe.txt
 
       - name: Create issue on failure
         if: steps.decide.outputs.ok != '1'

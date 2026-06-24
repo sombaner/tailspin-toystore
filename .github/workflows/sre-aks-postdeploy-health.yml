@@ -32,26 +32,43 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Check AKS power state
+        id: aks_state
+        run: |
+          STATE=$(az aks show --resource-group "$AKS_RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --query "powerState.code" -o tsv)
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" = "Running" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=AKS health check skipped::Cluster $AKS_CLUSTER_NAME is $STATE; rerun this workflow after the cluster starts."
+
       - name: Setup kubectl
+        if: steps.aks_state.outputs.ready == 'true'
         uses: azure/setup-kubectl@v4
 
       - name: Get AKS credentials
+        if: steps.aks_state.outputs.ready == 'true'
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
       - name: Wait for client rollout
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           set -e
           kubectl -n $NAMESPACE rollout status deploy/tailspin-client --timeout=180s || true
 
       - name: Wait for server rollout
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           set -e
           kubectl -n $NAMESPACE rollout status deploy/tailspin-server --timeout=180s || true
 
       - name: Gather pod status and logs
+        if: steps.aks_state.outputs.ready == 'true'
         id: gather
         run: |
           set -e
@@ -66,6 +83,7 @@ jobs:
           kubectl -n $NAMESPACE get svc -o wide > services.txt
 
       - name: Probe external client endpoint
+        if: steps.aks_state.outputs.ready == 'true'
         id: probe_client
         continue-on-error: true
         run: |
@@ -78,6 +96,7 @@ jobs:
           curl -fsS --max-time 10 "http://$EXTERNAL_IP/" -o /dev/null
 
       - name: Probe in-cluster server endpoint via curl pod
+        if: steps.aks_state.outputs.ready == 'true'
         id: probe_server
         continue-on-error: true
         run: |
@@ -86,6 +105,7 @@ jobs:
             "curl -fsS --max-time 10 http://tailspin-server.$NAMESPACE.svc.cluster.local:5100/api/games" || exit 1
 
       - name: Decide health result
+        if: steps.aks_state.outputs.ready == 'true'
         id: decide
         run: |
           set +e
@@ -95,6 +115,7 @@ jobs:
           echo "ok=$OK" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
+        if: steps.aks_state.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: aks-health-artifacts
@@ -104,7 +125,7 @@ jobs:
             services.txt
 
       - name: Create issue on failure
-        if: steps.decide.outputs.ok != '1'
+        if: steps.aks_state.outputs.ready == 'true' && steps.decide.outputs.ok != '1'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

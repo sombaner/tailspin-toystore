@@ -111,22 +111,38 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      # Ensure namespace exists
+      # Check if AKS cluster is running before attempting kubectl operations
+      - name: Check AKS cluster power state
+        id: cluster_state
+        timeout-minutes: 5
+        run: |
+          power_state=$(az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" -o tsv 2>/dev/null || echo "Unknown")
+          echo "power_state=$power_state" >> $GITHUB_OUTPUT
+          echo "AKS cluster power state: $power_state"
+
+      # Ensure namespace exists (skipped when cluster is stopped)
       - name: Create namespace if not exists
+        if: steps.cluster_state.outputs.power_state == 'Running'
         run: |
           kubectl apply -f render/namespace.yaml
 
-      # Deploy only the server component
+      # Deploy only the server component (skipped when cluster is stopped)
       - name: Deploy server
+        if: steps.cluster_state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
 
-      # Wait for server rollout to complete
+      # Wait for server rollout to complete (skipped when cluster is stopped)
       - name: Wait for server rollout
+        if: steps.cluster_state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
 
-      # Display server service status
+      # Display server service status (skipped when cluster is stopped)
       - name: Get server service status
+        if: steps.cluster_state.outputs.power_state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide

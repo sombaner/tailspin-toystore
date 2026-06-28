@@ -1,0 +1,22 @@
+server/tests/test_database_migration.py
+  s_5253782242a269::t_2eedcdd4b7a7b0 1-77
+server/utils/database.py
+  s_5253782242a269::t_e8b9df74b5c515 3
+  s_5253782242a269::t_514aca4611b889 2,20-21,36-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "6c51b9b13f5ce879d7005680f1589aa17f80b937",
+  "prompts": {},
+  "sessions": {
+    "s_5253782242a269": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "f030c066-e06e-4723-a844-ca37fa18524b",
+        "model": "unknown"
+      },
+      "human_author": "Somnath Banerjee <sombaner@github.com>"
+    }
+  }
+}

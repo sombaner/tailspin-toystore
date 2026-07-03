@@ -20,6 +20,7 @@ run-name: "Daily Test Coverage Improver"
 jobs:
   daily-test-coverage-improver:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       actions: write
       checks: read

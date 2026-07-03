@@ -100,12 +100,34 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # Check AKS cluster power state before attempting deployment
+      - name: Check AKS cluster state
+        id: aks-state
+        run: |
+          STATE=$(az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" -o tsv 2>/dev/null) || STATE="Unknown"
+          STATE=${STATE:-Unknown}
+          echo "state=$STATE" >> $GITHUB_OUTPUT
+          echo "AKS cluster power state: $STATE"
+
+      # Emit a warning and report skip reason when cluster is not Running
+      - name: Skip deployment notice (cluster not running)
+        if: steps.aks-state.outputs.state != 'Running'
+        run: |
+          echo "::warning::AKS cluster ${{ env.AKS_CLUSTER_NAME }} is '${{ steps.aks-state.outputs.state }}'. Deployment skipped -- runtime validation deferred."
+          echo "Client image was built and pushed to GHCR successfully."
+          echo "Re-trigger this workflow once the cluster is in Running state."
+
       # Set up kubectl for AKS interactions
       - name: Setup kubectl
+        if: steps.aks-state.outputs.state == 'Running'
         uses: azure/setup-kubectl@v4
 
       # Get credentials for the target AKS cluster
       - name: Get AKS credentials
+        if: steps.aks-state.outputs.state == 'Running'
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
@@ -113,20 +135,24 @@ jobs:
 
       # Ensure namespace exists
       - name: Create namespace if not exists
+        if: steps.aks-state.outputs.state == 'Running'
         run: |
           kubectl apply -f render/namespace.yaml
 
       # Deploy only the client component
       - name: Deploy client
+        if: steps.aks-state.outputs.state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/client.yaml
 
       # Wait for client rollout to complete
       - name: Wait for client rollout
+        if: steps.aks-state.outputs.state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-client --timeout=180s
 
       # Display client service external IP
       - name: Get client service external IP
+        if: steps.aks-state.outputs.state == 'Running'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-client -o wide

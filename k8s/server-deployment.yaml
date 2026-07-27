@@ -1,5 +1,5 @@
-# ci-touch: 2026-07-25T09:01Z trigger deploy workflows (server)
-# no functional changes
+# ci-touch: 2026-07-27T09:02Z trigger deploy workflows (server)
+# functional fix: correct resources.requests.memory indentation
 # SRE fix: confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets
 apiVersion: apps/v1
 kind: Deployment
@@ -48,7 +48,7 @@ spec:
           resources:
             requests:
               cpu: "250m"
-            memory: "512Mi"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"

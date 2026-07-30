@@ -1,4 +1,4 @@
-# ci-touch: 2026-07-29T09:02Z trigger deploy workflows (server)
+# ci-touch: 2026-07-30T09:01Z trigger deploy workflows (server)
 # functional fix: correct resources.requests.memory indentation
 # SRE fix: confirm GHCR image path matches workflow; ensure image is public; no imagePullSecrets
 apiVersion: apps/v1

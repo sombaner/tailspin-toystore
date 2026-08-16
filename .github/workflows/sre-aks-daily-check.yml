@@ -1,0 +1,163 @@
+name: SRE AKS Daily Health Check
+
+# Automated daily check for AKS cluster health.
+# Starts the cluster if stopped, creates a GitHub issue for visibility,
+# and re-triggers deploy workflows so the latest images are deployed.
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 08:00 UTC
+  workflow_dispatch:
+
+env:
+  AKS_RESOURCE_GROUP: sb-aks-rg
+  AKS_CLUSTER_NAME: sbAKSCluster
+
+jobs:
+  check-and-start-aks:
+    name: Check AKS State and Start if Stopped
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    outputs:
+      cluster_started: ${{ steps.check-state.outputs.cluster_started }}
+      power_state: ${{ steps.check-state.outputs.power_state }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Authenticate with Azure using OIDC (no hardcoded credentials)
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Check the current AKS cluster power state
+      - name: Check AKS cluster power state
+        id: check-state
+        run: |
+          STATE=$(az aks show \
+            -g "${{ env.AKS_RESOURCE_GROUP }}" \
+            -n "${{ env.AKS_CLUSTER_NAME }}" \
+            --query "powerState.code" -o tsv)
+          echo "Current AKS power state: $STATE"
+          echo "power_state=$STATE" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" = "Stopped" ]; then
+            echo "cluster_started=true" >> "$GITHUB_OUTPUT"
+            echo "AKS cluster is stopped; will start it."
+          else
+            echo "cluster_started=false" >> "$GITHUB_OUTPUT"
+            echo "AKS cluster is already running."
+          fi
+
+      # Start the cluster and wait up to 15 minutes for it to reach Running state
+      - name: Start AKS cluster if stopped
+        if: steps.check-state.outputs.power_state == 'Stopped'
+        run: |
+          echo "Starting AKS cluster ${{ env.AKS_CLUSTER_NAME }} in ${{ env.AKS_RESOURCE_GROUP }}..."
+          az aks start \
+            -g "${{ env.AKS_RESOURCE_GROUP }}" \
+            -n "${{ env.AKS_CLUSTER_NAME }}" \
+            --no-wait
+
+          echo "Polling for Running state (max 15 min: 30 attempts x 30s)..."
+          REACHED_RUNNING=false
+          for i in $(seq 1 30); do
+            STATE=$(az aks show \
+              -g "${{ env.AKS_RESOURCE_GROUP }}" \
+              -n "${{ env.AKS_CLUSTER_NAME }}" \
+              --query "powerState.code" -o tsv)
+            echo "Attempt $i/30: AKS power state = $STATE"
+            if [ "$STATE" = "Running" ]; then
+              echo "✅ AKS cluster is now Running"
+              REACHED_RUNNING=true
+              break
+            fi
+            sleep 30
+          done
+          [ "$REACHED_RUNNING" = "false" ] && echo "⚠️ Polling timed out; performing final state verification..."
+
+          # Verify final state
+          FINAL_STATE=$(az aks show \
+            -g "${{ env.AKS_RESOURCE_GROUP }}" \
+            -n "${{ env.AKS_CLUSTER_NAME }}" \
+            --query "powerState.code" -o tsv)
+          if [ "$FINAL_STATE" != "Running" ]; then
+            echo "❌ AKS cluster failed to reach Running state. Final state: $FINAL_STATE"
+            exit 1
+          fi
+
+      # Create a GitHub issue to inform the team that the cluster was auto-started
+      - name: Create issue for cluster auto-start notification
+        if: steps.check-state.outputs.power_state == 'Stopped'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const now = new Date().toISOString();
+            const title = `SRE: AKS cluster auto-started (${now})`;
+            const body = [
+              '**Automated SRE daily health check detected the AKS cluster was Stopped and started it automatically.**',
+              '',
+              `| Field | Value |`,
+              `|---|---|`,
+              `| Cluster | \`${{ env.AKS_CLUSTER_NAME }}\` |`,
+              `| Resource Group | \`${{ env.AKS_RESOURCE_GROUP }}\` |`,
+              `| Detected at | \`${now}\` |`,
+              `| Action taken | \`az aks start\` |`,
+              '',
+              'Deploy workflows have been re-triggered automatically. Monitor the [Actions tab](${{ github.server_url }}/${{ github.repository }}/actions) for deployment status.',
+              '',
+              '*This issue was automatically created by the [SRE AKS Daily Health Check](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.*'
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['sre', 'infrastructure']
+            });
+
+  trigger-deploys:
+    name: Trigger Deployments After Cluster Start
+    needs: check-and-start-aks
+    # Only re-trigger deploys when the cluster was actually started
+    if: needs.check-and-start-aks.outputs.cluster_started == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      # Re-trigger the client deploy workflow so the latest image is deployed
+      - name: Trigger client deployment workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'client-deploy-aks.yml',
+              ref: 'main'
+            });
+            console.log('✅ Triggered client-deploy-aks.yml');
+
+      # Re-trigger the server deploy workflow so the latest image is deployed
+      - name: Trigger server deployment workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'server-deploy-aks.yml',
+              ref: 'main'
+            });
+            console.log('✅ Triggered server-deploy-aks.yml');

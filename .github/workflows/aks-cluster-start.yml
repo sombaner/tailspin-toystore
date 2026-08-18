@@ -1,0 +1,174 @@
+name: AKS Cluster Start and Validate
+
+# Start the AKS cluster if stopped, then run post-start health validation.
+# Trigger manually or on a schedule to ensure the cluster is running ahead of deployments.
+on:
+  workflow_dispatch:
+  schedule:
+    # Run daily at 08:00 UTC to warm up the cluster before business hours
+    - cron: '0 8 * * *'
+
+env:
+  NAMESPACE: tail-spin
+  AKS_RESOURCE_GROUP: sb-aks-rg
+  AKS_CLUSTER_NAME: sbAKSCluster
+
+jobs:
+  start-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Authenticate with Azure using OIDC (no long-lived secrets)
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Check power state; start the cluster if it is Stopped
+      - name: Ensure AKS cluster is running
+        run: |
+          set -e
+          POWER_STATE=$(az aks show \
+            --resource-group "$AKS_RESOURCE_GROUP" \
+            --name "$AKS_CLUSTER_NAME" \
+            --query 'powerState.code' -o tsv)
+          echo "Current cluster power state: $POWER_STATE"
+
+          if [ "$POWER_STATE" = "Stopped" ]; then
+            echo "Cluster is Stopped — initiating start..."
+            az aks start \
+              --resource-group "$AKS_RESOURCE_GROUP" \
+              --name "$AKS_CLUSTER_NAME"
+
+            echo "Waiting for cluster to reach Running state (up to 15 min)..."
+            for i in $(seq 1 30); do
+              POWER_STATE=$(az aks show \
+                --resource-group "$AKS_RESOURCE_GROUP" \
+                --name "$AKS_CLUSTER_NAME" \
+                --query 'powerState.code' -o tsv)
+              echo "  Poll $i/30: power state = $POWER_STATE"
+              [ "$POWER_STATE" = "Running" ] && break
+              sleep 30
+            done
+
+            if [ "$POWER_STATE" != "Running" ]; then
+              echo "ERROR: Cluster did not reach Running state within 15 minutes."
+              exit 1
+            fi
+            echo "Cluster is now Running."
+          elif [ "$POWER_STATE" = "Running" ]; then
+            echo "Cluster is already Running — no action needed."
+          else
+            echo "Unexpected cluster power state: $POWER_STATE"
+            exit 1
+          fi
+
+      # Set up kubectl for validation
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      # Get AKS credentials for kubectl
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
+
+      # Show overall workload state in the tail-spin namespace
+      - name: Get deployments, services, and pods
+        run: |
+          set -e
+          echo "=== Deployments, Services, and Pods in namespace $NAMESPACE ==="
+          kubectl -n "$NAMESPACE" get deploy,svc,pods -o wide || echo "(namespace may not exist yet)"
+
+      # Confirm both deployments are rolled out
+      - name: Rollout status — tailspin-server
+        run: |
+          kubectl -n "$NAMESPACE" rollout status deploy/tailspin-server --timeout=180s \
+            || echo "WARNING: tailspin-server rollout not complete or deployment not found"
+
+      - name: Rollout status — tailspin-client
+        run: |
+          kubectl -n "$NAMESPACE" rollout status deploy/tailspin-client --timeout=180s \
+            || echo "WARNING: tailspin-client rollout not complete or deployment not found"
+
+      # Confirm image tags on both deployments
+      - name: Describe deployments (confirm image tags)
+        run: |
+          echo "=== tailspin-server ==="
+          kubectl -n "$NAMESPACE" describe deploy tailspin-server || echo "(not found)"
+          echo "=== tailspin-client ==="
+          kubectl -n "$NAMESPACE" describe deploy tailspin-client || echo "(not found)"
+
+      # Collect last 200 log lines from the server
+      - name: Server logs (last 200 lines)
+        run: |
+          kubectl -n "$NAMESPACE" logs deploy/tailspin-server --tail=200 \
+            || echo "WARNING: could not retrieve server logs"
+
+      # Probe client Service external IP
+      - name: Probe client external endpoint
+        id: probe_client
+        continue-on-error: true
+        run: |
+          set -e
+          EXTERNAL_IP=$(kubectl -n "$NAMESPACE" get svc tailspin-client \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "No external IP assigned to tailspin-client service yet."
+            exit 1
+          fi
+          echo "Client LoadBalancer IP: $EXTERNAL_IP"
+          curl -fsS --max-time 15 "http://$EXTERNAL_IP/" -o /dev/null \
+            && echo "Client endpoint responded OK."
+
+      # Decide overall health
+      - name: Decide health result
+        id: decide
+        run: |
+          set +e
+          OK=1
+          [ "${{ steps.probe_client.outcome }}" = "success" ] || OK=0
+          echo "ok=$OK" >> $GITHUB_OUTPUT
+          echo "Overall health OK: $OK"
+
+      # Create a failure issue if validation did not pass
+      - name: Create issue on failure
+        if: steps.decide.outputs.ok != '1'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `AKS post-start validation FAILED — ${process.env.AKS_CLUSTER_NAME}`;
+            const body = [
+              '## AKS Post-Start Validation Failure',
+              '',
+              `**Cluster**: ${process.env.AKS_CLUSTER_NAME}`,
+              `**Resource Group**: ${process.env.AKS_RESOURCE_GROUP}`,
+              `**Namespace**: ${process.env.NAMESPACE}`,
+              '',
+              '### Probe Results',
+              `- Client external endpoint: ${{ steps.probe_client.outcome }}`,
+              '',
+              `**Workflow run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              'Check the workflow run artifacts for pod status, logs, and describe output.',
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['automation', 'infrastructure'],
+            });

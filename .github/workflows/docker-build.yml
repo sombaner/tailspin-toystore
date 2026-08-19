@@ -33,6 +33,7 @@ jobs:
   build-server:
     name: Build Server Image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Only run if infrastructure deployment succeeded or manually triggered
     if: |
       github.event_name == 'workflow_dispatch' ||
@@ -147,6 +148,7 @@ jobs:
   build-client:
     name: Build Client Image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Only run if infrastructure deployment succeeded or manually triggered
     if: |
       github.event_name == 'workflow_dispatch' ||

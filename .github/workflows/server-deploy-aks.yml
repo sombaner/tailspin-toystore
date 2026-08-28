@@ -104,6 +104,25 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
+      # Fail fast with actionable diagnostics if the AKS control plane is unavailable
+      - name: Check AKS cluster availability
+        run: |
+          AKS_POWER_STATE=$(az aks show --resource-group "${{ env.AKS_RESOURCE_GROUP }}" --name "${{ env.AKS_CLUSTER_NAME }}" --query powerState.code -o tsv)
+          AKS_FQDN=$(az aks show --resource-group "${{ env.AKS_RESOURCE_GROUP }}" --name "${{ env.AKS_CLUSTER_NAME }}" --query fqdn -o tsv)
+
+          echo "AKS power state: ${AKS_POWER_STATE}"
+          echo "AKS API FQDN: ${AKS_FQDN}"
+
+          if [ "${AKS_POWER_STATE}" != "Running" ]; then
+            echo "::error::AKS cluster ${AKS_CLUSTER_NAME} is ${AKS_POWER_STATE}. Start the cluster and rerun this workflow."
+            exit 1
+          fi
+
+          if ! getent hosts "${AKS_FQDN}" >/dev/null; then
+            echo "::error::AKS API endpoint ${AKS_FQDN} is not resolvable from the runner. If the cluster was recently started, wait for DNS/control plane recovery and rerun this workflow."
+            exit 1
+          fi
+
       # Get AKS credentials for the target cluster
       - name: Get AKS credentials
         uses: azure/aks-set-context@v4

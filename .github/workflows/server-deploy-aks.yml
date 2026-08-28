@@ -53,10 +53,11 @@ jobs:
       # Make the server image package public
       - name: Make server image public
         run: |
-          curl -L -X PATCH \
+          curl -fsSL -X PATCH \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/user/packages/container/tailspin-server/visibility \
+            -H "Content-Type: application/json" \
+            https://api.github.com/users/${{ github.repository_owner }}/packages/container/${{ github.event.repository.name }}%2Ftailspin-server/visibility \
             -d '{"visibility":"public"}'
 
       # Render server deployment manifest with correct image tag
@@ -100,12 +101,26 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Check AKS power state
+        id: aks_state
+        run: |
+          STATE=$(az aks show --resource-group "$AKS_RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --query "powerState.code" -o tsv)
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" = "Running" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=AKS deploy skipped::Cluster $AKS_CLUSTER_NAME is $STATE; skipping kubectl deployment until it is running."
+
       # Set up kubectl for AKS interactions
       - name: Setup kubectl
+        if: steps.aks_state.outputs.ready == 'true'
         uses: azure/setup-kubectl@v4
 
       # Get AKS credentials for the target cluster
       - name: Get AKS credentials
+        if: steps.aks_state.outputs.ready == 'true'
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
@@ -113,20 +128,24 @@ jobs:
 
       # Ensure namespace exists
       - name: Create namespace if not exists
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           kubectl apply -f render/namespace.yaml
 
       # Deploy only the server component
       - name: Deploy server
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
 
       # Wait for server rollout to complete
       - name: Wait for server rollout
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
 
       # Display server service status
       - name: Get server service status
+        if: steps.aks_state.outputs.ready == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide

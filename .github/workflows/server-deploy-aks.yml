@@ -100,12 +100,50 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # Check AKS cluster power state; skip deploy steps if cluster is stopped
+      - name: Check AKS cluster power state
+        id: cluster-state
+        run: |
+          if ! az aks show \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --query "powerState.code" \
+            --output tsv > "$RUNNER_TEMP/aks-power-state.txt" 2>"$RUNNER_TEMP/aks-error.txt"; then
+            echo "::error::Failed to query AKS cluster state: $(cat "$RUNNER_TEMP/aks-error.txt")"
+            exit 1
+          fi
+          POWER_STATE=$(cat "$RUNNER_TEMP/aks-power-state.txt")
+          if [ -z "$POWER_STATE" ]; then
+            echo "::error::Empty power state returned from AKS cluster query. Manual investigation required."
+            exit 1
+          fi
+          echo "AKS cluster power state: $POWER_STATE"
+          case "$POWER_STATE" in
+            Running)
+              echo "cluster_running=true" >> $GITHUB_OUTPUT
+              ;;
+            Stopped|Deallocated)
+              echo "cluster_running=false" >> $GITHUB_OUTPUT
+              echo "::warning::AKS cluster is intentionally stopped (PowerState=$POWER_STATE). Skipping kubectl deploy steps; build and image push succeeded."
+              ;;
+            Starting|Stopping)
+              echo "cluster_running=false" >> $GITHUB_OUTPUT
+              echo "::warning::AKS cluster is in a transient state (PowerState=$POWER_STATE). Skipping kubectl deploy steps; retry once the cluster reaches a stable state."
+              ;;
+            *)
+              echo "::error::AKS cluster is in an unexpected state (PowerState=$POWER_STATE). Manual investigation required."
+              exit 1
+              ;;
+          esac
+
       # Set up kubectl for AKS interactions
       - name: Setup kubectl
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         uses: azure/setup-kubectl@v4
 
       # Get AKS credentials for the target cluster
       - name: Get AKS credentials
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
@@ -113,20 +151,24 @@ jobs:
 
       # Ensure namespace exists
       - name: Create namespace if not exists
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         run: |
           kubectl apply -f render/namespace.yaml
 
       # Deploy only the server component
       - name: Deploy server
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} apply -f render/server.yaml
 
       # Wait for server rollout to complete
       - name: Wait for server rollout
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} rollout status deploy/tailspin-server --timeout=120s
 
       # Display server service status
       - name: Get server service status
+        if: steps.cluster-state.outputs.cluster_running == 'true'
         run: |
           kubectl -n ${{ env.NAMESPACE }} get svc tailspin-server -o wide
